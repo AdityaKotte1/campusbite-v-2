@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-inter: 'Inter', system-ui, sans-serif;
+
+  /* Brand */
+  --brand: #E8390E;
+  --brand-dark: #C12E0A;
+  --brand-light: #FF6B40;
+  --brand-pale: #FFF0EC;
+
+  /* Green */
+  --green: #00A877;
+  --green-dark: #007A57;
+  --green-light: #E6F9F4;
+
+  /* Surfaces */
+  --surface: #FFFFFF;
+  --bg: #F5F5F5;
+  --bg2: #FAFAFA;
+
+  /* Text */
+  --text: #111111;
+  --text2: #555555;
+  --text3: #999999;
+
+  /* Border */
+  --border: #EBEBEB;
+  --border2: #E0E0E0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-inter);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text3);
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Admin table styles */
+.admin-table th {
+  @apply text-xs font-semibold text-text-3 uppercase tracking-wide bg-bg-2 border-b border-border;
+}
+
+.admin-table td {
+  @apply text-sm text-text border-b border-border;
+}
+
+.admin-table tr:hover td {
+  @apply bg-bg-2;
+}
+
+/* Sidebar transition */
+.sidebar-transition {
+  transition: width 200ms ease, transform 200ms ease;
+}

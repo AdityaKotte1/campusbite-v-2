@@ -1,0 +1,30 @@
+[Unit]
+Description=CampusBite Kiosk Application
+After=network.target graphical.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kiosk
+Group=kiosk
+WorkingDirectory=/opt/campusbite-kiosk
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/kiosk/.Xauthority"
+# Load API key from a secure file (create this file with: sudo systemd-creds encrypt ...)
+# For simpler setups, set directly (ensure file is root-owned, 0600):
+EnvironmentFile=-/etc/campusbite-kiosk/secrets.env
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/python3 /opt/campusbite-kiosk/main.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/campusbite-kiosk/logs/kiosk.log
+StandardError=append:/opt/campusbite-kiosk/logs/kiosk.log
+NoNewPrivileges=true
+PrivateTmp=true
+# Restrict filesystem access
+ReadWritePaths=/opt/campusbite-kiosk/logs /opt/campusbite-kiosk/db
+ReadOnlyPaths=/opt/campusbite-kiosk
+InaccessiblePaths=-/home /root /boot
+
+[Install]
+WantedBy=graphical.target

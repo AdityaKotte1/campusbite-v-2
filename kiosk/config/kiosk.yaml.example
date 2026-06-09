@@ -1,0 +1,42 @@
+# CampusBite Kiosk Configuration
+# SECURITY: Do NOT store secrets in this file.
+# Set CAMPUSBITE_API_KEY and DB_ENCRYPTION_KEY in /etc/campusbite-kiosk/secrets.env
+
+server:
+  base_url: "https://campusbite.com"
+  timeout_seconds: 10
+  retry_attempts: 3
+  retry_delay_seconds: 1
+
+kiosk:
+  id: "replace-with-kiosk-uuid-from-admin-panel"
+  # api_key is loaded from CAMPUSBITE_API_KEY environment variable.
+  # Do NOT put the key here. See /etc/campusbite-kiosk/secrets.env
+  # api_key: ""  # only used as fallback if env var not set — not recommended
+  canteen_id: "replace-with-canteen-uuid"
+  name: "Main Counter Kiosk"
+
+printer:
+  vendor_id: "0x0483"
+  product_id: "0x5743"
+  paper_width_mm: 58
+  chars_per_line: 32
+  cut_after_print: true
+
+display:
+  fullscreen: true
+  width: 800
+  height: 480
+  font_size_large: 72
+  font_size_medium: 28
+  font_size_small: 14
+
+audio:
+  enabled: true
+  volume: 0.8
+
+offline:
+  enabled: true
+  cache_ttl_seconds: 300
+  max_queue_size: 1000
+  sync_interval_seconds: 30

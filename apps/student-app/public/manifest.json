@@ -1,0 +1,9 @@
+{
+  "name": "CampusBite",
+  "short_name": "CampusBite",
+  "description": "Fast campus food ordering",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F5F5",
+  "theme_color": "#E8390E"
+}

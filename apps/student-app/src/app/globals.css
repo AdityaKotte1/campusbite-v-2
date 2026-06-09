@@ -1,0 +1,192 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand */
+  --brand: #E8390E;
+  --brand-dark: #C12E0A;
+  --brand-light: #FF6B40;
+  --brand-pale: #FFF0EC;
+
+  /* Green */
+  --green: #00A877;
+  --green-dark: #007A57;
+  --green-light: #E6F9F4;
+
+  /* Surface & Background */
+  --surface: #FFFFFF;
+  --bg: #F5F5F5;
+  --bg-2: #FAFAFA;
+
+  /* Text */
+  --text: #111111;
+  --text-2: #555555;
+  --text-3: #999999;
+
+  /* Border */
+  --border: #EBEBEB;
+  --border-2: #E0E0E0;
+
+  /* Spacing */
+  --bottom-nav-height: 64px;
+  --header-height: 56px;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-2);
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-3);
+  }
+
+  /* Hide scrollbar for horizontal scroll containers */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Focus styles */
+  *:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  /* Safe area padding for bottom nav */
+  .pb-safe {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mb-safe {
+    margin-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Veg/Non-veg indicators */
+  .veg-dot {
+    width: 10px;
+    height: 10px;
+    background-color: var(--green);
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .non-veg-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #DC2626;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* Card base */
+  .card {
+    background-color: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  /* Brand gradient */
+  .brand-gradient {
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%);
+  }
+
+  /* Skeleton animation */
+  .skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+  }
+
+  @keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Press/tap effect */
+  .press {
+    transition: transform 0.1s ease;
+  }
+
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  /* Status dot */
+  .status-dot-open {
+    width: 8px;
+    height: 8px;
+    background-color: var(--green);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse-green 2s infinite;
+  }
+
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+}
+
+@layer utilities {
+  .text-brand { color: var(--brand); }
+  .text-brand-dark { color: var(--brand-dark); }
+  .text-text-2 { color: var(--text-2); }
+  .text-text-3 { color: var(--text-3); }
+  .bg-brand { background-color: var(--brand); }
+  .bg-brand-pale { background-color: var(--brand-pale); }
+  .border-brand { border-color: var(--brand); }
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+}

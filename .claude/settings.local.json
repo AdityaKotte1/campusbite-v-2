@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Recurse -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(ConvertTo-Csv -NoTypeInformation)",
+      "Bash(Out-String)",
+      "PowerShell(Set-Location \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\"; Get-ChildItem -Recurse -Force | ForEach-Object { if \\($_.PSIsContainer\\) { $_.FullName + \" [DIR]\" } else { $_.FullName } } | Sort-Object)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\packages\\\\shared\\\\src\\\\types\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\packages\\\\shared\\\\src\\\\utils\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\packages\\\\database\\\\migrations\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\\\\student-app\\\\src\\\\app\\\\\\(main\\)\\\\canteens\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\\\\student-app\\\\src\\\\app\\\\\\(main\\)\\\\menu\\\\[canteenId]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\\\\student-app\\\\src\\\\app\\\\\\(main\\)\\\\cart\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\\\\student-app\\\\src\\\\app\\\\\\(main\\)\\\\orders\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\\\\student-app\\\\src\\\\app\\\\\\(main\\)\\\\profile\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\\\\student-app\\\\src\\\\app\\\\api\\\\v1\\\\canteens\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\\\\student-app\\\\src\\\\app\\\\api\\\\v1\\\\canteens\\\\[canteenId]\\\\menu-items\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\\\\student-app\\\\src\\\\app\\\\api\\\\v1\\\\canteens\\\\[canteenId]\\\\categories\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\\\\student-app\\\\src\\\\app\\\\api\\\\v1\\\\orders\\\\[id]\\\\qr\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\gurua\\\\Downloads\\\\Telegram Desktop\\\\Canteen management\\\\CAMPUS BITE CLEAN\\\\apps\\\\student-app\\\\src\\\\app\\\\api\\\\v1\\\\orders\\\\[id]\\\\cancel\")"
+    ]
+  }
+}
