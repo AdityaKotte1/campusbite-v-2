@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { QR_EXPIRY_HOURS } from '@/lib/constants';
 import { randomUUID } from 'crypto';
 import { getRazorpayForCanteen } from '@/lib/razorpay-config';
@@ -60,8 +60,15 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    // Privileged writes: payment verification is a trusted server action, so use
+    // the service-role client. The order owner has no UPDATE policy under RLS
+    // (only canteen_admin/staff/super_admin do), so a user-context update would
+    // silently affect 0 rows and the order would stay "awaiting payment".
+    // Ownership was already enforced above via the user-context SELECT.
+    const service = createServiceClient();
+
     // Update order to paid + confirmed
-    const { error: updateErr } = await supabase
+    const { data: updated, error: updateErr } = await service
       .from('orders')
       .update({
         payment_status: 'paid',
@@ -70,14 +77,20 @@ export async function POST(request: Request) {
         razorpay_payment_id,
         payment_method: 'razorpay',
       })
-      .eq('id', order_id);
+      .eq('id', order_id)
+      .select('id');
 
     if (updateErr) {
       return NextResponse.json({ error: 'update_failed', message: updateErr.message }, { status: 500 });
     }
+    if (!updated || updated.length === 0) {
+      // Should not happen now that we use the service client, but fail loudly
+      // rather than silently report success on a no-op update.
+      return NextResponse.json({ error: 'update_failed', message: 'Order was not updated' }, { status: 500 });
+    }
 
     // Record payment transaction
-    await supabase.from('payment_transactions').insert({
+    await service.from('payment_transactions').insert({
       order_id,
       razorpay_order_id,
       razorpay_payment_id,
@@ -89,7 +102,7 @@ export async function POST(request: Request) {
 
     // Auto-generate QR token for pickup
     const expiresAt = new Date(Date.now() + QR_EXPIRY_HOURS * 60 * 60 * 1000).toISOString();
-    await supabase.from('qr_tokens').insert({
+    await service.from('qr_tokens').insert({
       order_id,
       token: randomUUID(),
       expires_at: expiresAt,
