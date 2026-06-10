@@ -92,7 +92,7 @@ export async function POST(request: Request) {
       // This tells the modal which Razorpay account to show
       key_id: creds.keyId,
       order_number: order.order_number,
-      canteen_name: (order.canteen as { name: string } | null)?.name ?? 'Canteen',
+      canteen_name: (order.canteen as unknown as { name: string } | null)?.name ?? 'Canteen',
     });
   } catch (err) {
     console.error('Payment create error:', err);

@@ -132,7 +132,10 @@ export function QRDisplay({ orderId }: QRDisplayProps) {
       >
         <canvas
           ref={canvasRef}
-          className={cn('block', isExpired && 'filter blur-sm')}
+          onContextMenu={(e) => e.preventDefault()}
+          className={cn('block select-none', isExpired && 'filter blur-sm')}
+          style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
+          draggable={false}
         />
       </div>
 

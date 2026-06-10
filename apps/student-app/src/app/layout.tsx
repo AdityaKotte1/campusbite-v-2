@@ -24,6 +24,16 @@ export const metadata: Metadata = {
     type: 'website',
   },
   manifest: '/manifest.json',
+  // Installable full-screen app on iOS (Add to Home Screen → standalone)
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'CampusBite',
+  },
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/icon-192.png',
+  },
 };
 
 export const viewport: Viewport = {
@@ -32,6 +42,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

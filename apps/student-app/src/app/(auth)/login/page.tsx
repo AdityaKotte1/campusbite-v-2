@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -9,7 +9,7 @@ import { Eye, EyeOff, Loader2, Mail, Lock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { loginSchema, type LoginInput } from '@/lib/validation';
 
-export default function LoginPage() {
+function LoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') ?? '/';
@@ -229,5 +229,13 @@ export default function LoginPage() {
         </Link>
       </p>
     </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginInner />
+    </Suspense>
   );
 }

@@ -46,7 +46,8 @@ export default function OrderDetailPage({ params }: Props) {
   const { data: order, isLoading, isError } = useQuery({
     queryKey: ['order', id],
     queryFn: () => fetchOrder(id),
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
+      const data = query.state.data;
       if (!data) return false;
       const active = ['payment_pending', 'confirmed', 'preparing', 'ready'];
       return active.includes(data.status) ? POLLING_INTERVAL_MS : false;

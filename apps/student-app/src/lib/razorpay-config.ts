@@ -60,7 +60,7 @@ export async function getRazorpayForCanteen(
     throw new Error(`Canteen ${canteenId} not found`);
   }
 
-  const institute = canteen.institute as {
+  const institute = canteen.institute as unknown as {
     id: string;
     name: string;
     razorpay_key_id: string | null;
