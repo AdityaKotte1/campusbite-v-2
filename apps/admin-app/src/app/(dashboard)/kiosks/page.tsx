@@ -27,7 +27,7 @@ export default function KiosksPage() {
 
   const { data: canteensData } = useQuery<{ data: Canteen[] }>({
     queryKey: ['canteens'],
-    queryFn: () => axios.get('/api/v1/admin/kiosks?list=canteens').then((r) => r.data),
+    queryFn: () => axios.get('/api/v1/admin/canteens').then((r) => r.data),
   });
 
   const kiosks = kiosksData?.data ?? [];

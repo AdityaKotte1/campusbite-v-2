@@ -121,7 +121,7 @@ export default function KioskDetailPage() {
                       kiosk.scans.map((scan) => (
                         <tr key={scan.id} className="border-b border-border last:border-0 hover:bg-bg-2 transition-colors">
                           <td className="px-5 py-2.5 font-mono text-xs text-text-2">
-                            {scan.token.slice(0, 12)}…
+                            {scan.token ? scan.token.slice(0, 12) + '…' : '—'}
                           </td>
                           <td className="px-5 py-2.5 font-mono text-xs text-text-2">
                             {scan.order_id ? scan.order_id.slice(0, 8) + '…' : '—'}

@@ -31,7 +31,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
       .single(),
     service
       .from('kiosk_scans')
-      .select('*')
+      .select('id, kiosk_id, raw_token_value, scan_result, scanned_at, offline_scan, qr_token_id, qr_tokens(order_id)')
       .eq('kiosk_id', params.id)
       .order('scanned_at', { ascending: false })
       .limit(100),
@@ -41,11 +41,23 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Kiosk not found' } }, { status: 404 });
   }
 
+  // Map DB columns (raw_token_value/scan_result/qr_token_id) to the shape the
+  // KioskScan type and detail page expect (token/result/order_id).
+  const scans = (scansResult.data ?? []).map((s: Record<string, unknown>) => ({
+    id: s.id,
+    kiosk_id: s.kiosk_id,
+    token: (s.raw_token_value as string | null) ?? '',
+    order_id: (s.qr_tokens as { order_id: string } | null)?.order_id ?? null,
+    result: s.scan_result,
+    offline_scan: s.offline_scan,
+    scanned_at: s.scanned_at,
+  }));
+
   return NextResponse.json({
     success: true,
     data: {
       ...kioskResult.data,
-      scans: scansResult.data ?? [],
+      scans,
     },
   });
 }

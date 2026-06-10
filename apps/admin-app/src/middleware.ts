@@ -36,10 +36,11 @@ export async function middleware(request: NextRequest) {
   const isLoginPage = pathname === '/login';
   const isAuthCallback = pathname.startsWith('/auth/');
   const isApiRoute = pathname.startsWith('/api/v1/kiosk/');
+  const isHealthCheck = pathname === '/api/health';
   const isRoot = pathname === '/';
 
-  // Allow kiosk API routes without session check
-  if (isApiRoute) {
+  // Allow kiosk API routes and the public health check without session check
+  if (isApiRoute || isHealthCheck) {
     return supabaseResponse;
   }
 
