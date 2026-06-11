@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { Providers } from './providers';
+import { ServiceWorkerRegister } from '@/components/pwa/sw-register';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head />
       <body className="bg-bg font-sans antialiased">
         <Providers>{children}</Providers>
+        <ServiceWorkerRegister />
         <Script
           src="https://checkout.razorpay.com/v1/checkout.js"
           strategy="afterInteractive"
