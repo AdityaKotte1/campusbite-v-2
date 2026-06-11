@@ -1,0 +1,44 @@
+{
+  "id": "/",
+  "name": "CampusBite Admin",
+  "short_name": "CB Admin",
+  "description": "Manage canteens, orders, menus, kiosks, and billing.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#F5F5F5",
+  "theme_color": "#E8390E",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "food"],
+  "launch_handler": { "client_mode": "navigate-existing" },
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Admin dashboard"
+    },
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "CampusBite Admin console"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Dashboard", "short_name": "Dashboard", "url": "/dashboard" },
+    { "name": "Orders", "short_name": "Orders", "url": "/orders" },
+    { "name": "Kiosks", "short_name": "Kiosks", "url": "/kiosks" }
+  ]
+}

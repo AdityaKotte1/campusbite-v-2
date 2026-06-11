@@ -25,6 +25,7 @@ const nextConfig = {
               "img-src 'self' data: https: blob:",
               "font-src 'self' https://fonts.gstatic.com",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.razorpay.com",
+              "worker-src 'self'",
               "frame-src 'self' https://*.razorpay.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
