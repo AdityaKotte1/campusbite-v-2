@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
   }
 
   const cachePayload = (tokens ?? []).map((t) => {
-    const order = t.orders as {
+    const order = t.orders as unknown as {
       order_number: string;
       subtotal_paise: number;
       tax_paise: number;

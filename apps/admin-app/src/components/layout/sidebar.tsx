@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingBag, UtensilsCrossed, Users, UserCheck,
   BarChart3, Monitor, Settings, ClipboardList, LogOut, ChevronLeft,
-  Building2, Store,
+  Building2, Store, CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -15,6 +15,7 @@ import { initials } from '@/lib/formatting';
 const ALL_NAV = [
   { href: '/dashboard',  label: 'Dashboard',  Icon: LayoutDashboard, roles: ['super_admin', 'canteen_admin', 'staff'] },
   { href: '/institutes', label: 'Institutes', Icon: Building2,       roles: ['super_admin'] },
+  { href: '/subscriptions', label: 'Subscriptions', Icon: CreditCard, roles: ['super_admin'] },
   { href: '/canteens',   label: 'Canteens',   Icon: Store,           roles: ['super_admin', 'canteen_admin'] },
   { href: '/orders',     label: 'Orders',     Icon: ShoppingBag,     roles: ['super_admin', 'canteen_admin', 'staff'] },
   { href: '/menu',       label: 'Menu',       Icon: UtensilsCrossed, roles: ['super_admin', 'canteen_admin', 'staff'] },

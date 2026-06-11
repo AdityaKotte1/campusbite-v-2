@@ -50,3 +50,5 @@ venv/
 kiosk/config/kiosk.yaml
 kiosk/db/
 kiosk/logs/
+
+.vercel
