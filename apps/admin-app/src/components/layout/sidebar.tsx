@@ -23,6 +23,7 @@ const ALL_NAV = [
   { href: '/staff',      label: 'Staff',      Icon: UserCheck,       roles: ['super_admin', 'canteen_admin'] },
   { href: '/analytics',  label: 'Analytics',  Icon: BarChart3,       roles: ['super_admin', 'canteen_admin'] },
   { href: '/kiosks',     label: 'Kiosks',     Icon: Monitor,         roles: ['super_admin', 'canteen_admin', 'staff'] },
+  { href: '/billing',    label: 'Billing',    Icon: CreditCard,      roles: ['canteen_admin'] },
   { href: '/settings',   label: 'Settings',   Icon: Settings,        roles: ['super_admin', 'canteen_admin'] },
   { href: '/audit-logs', label: 'Audit Logs', Icon: ClipboardList,   roles: ['super_admin'] },
 ];
