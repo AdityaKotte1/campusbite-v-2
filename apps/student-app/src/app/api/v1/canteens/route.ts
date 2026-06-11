@@ -31,10 +31,24 @@ export async function GET(request: Request) {
       .order('name', { ascending: true })
       .limit(Math.min(limit, 50));
 
-    // If the user belongs to an institute, show only that institute's canteens.
-    // If not (unauthenticated or no institute assigned), show all.
+    // Subscription gating: only surface canteens whose institute is an active
+    // subscriber. (Two-step keeps the query simple and avoids embedded-filter
+    // ambiguity; institutes are few per tenant, so this is cheap.)
+    const { data: activeInsts } = await supabase
+      .from('institutes')
+      .select('id')
+      .eq('is_active_subscriber', true);
+    const activeIds = (activeInsts ?? []).map((r) => r.id as string);
+
     if (instituteId) {
+      // A scoped user whose institute lapsed sees nothing.
+      if (!activeIds.includes(instituteId)) {
+        return NextResponse.json({ data: [], meta: { institute_id: instituteId, scoped: true, inactive_subscription: true } });
+      }
       query = query.eq('institute_id', instituteId);
+    } else {
+      // Sentinel id ensures "no active subscribers" returns nothing, not all.
+      query = query.in('institute_id', activeIds.length ? activeIds : ['00000000-0000-0000-0000-000000000000']);
     }
 
     if (search) {

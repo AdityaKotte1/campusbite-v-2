@@ -10,6 +10,7 @@ export async function GET() {
       .from('institutes')
       .select('id, name, code:short_name, city, state, logo_url')
       .eq('is_active', true)
+      .eq('is_active_subscriber', true) // hide institutes without an active subscription
       .order('name', { ascending: true });
 
     if (error) {

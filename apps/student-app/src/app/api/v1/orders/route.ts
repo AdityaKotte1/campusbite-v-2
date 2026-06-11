@@ -71,12 +71,18 @@ export async function POST(request: Request) {
     // Verify canteen exists and is open
     const { data: canteen, error: canteenErr } = await supabase
       .from('canteens')
-      .select('id, is_open, is_active')
+      .select('id, is_open, is_active, institute_id, institutes(is_active_subscriber)')
       .eq('id', canteen_id)
       .single();
 
     if (canteenErr || !canteen) {
       return NextResponse.json({ error: 'not_found', message: 'Canteen not found' }, { status: 404 });
+    }
+
+    // Subscription gating: block new orders if the institute's subscription lapsed.
+    const inst = canteen.institutes as unknown as { is_active_subscriber?: boolean } | null;
+    if (inst && inst.is_active_subscriber === false) {
+      return NextResponse.json({ error: 'institute_inactive', message: 'Ordering is currently unavailable for this canteen.' }, { status: 403 });
     }
 
     if (!canteen.is_active) {
