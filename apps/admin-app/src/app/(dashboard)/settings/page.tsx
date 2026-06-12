@@ -178,7 +178,13 @@ function RazorpayKeyForm({
                 {showWebhook ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-xs text-text-3 mt-1">Add <code className="bg-bg-2 px-1 rounded">{window.location.origin}/api/v1/payments/webhook</code> in Razorpay → Settings → Webhooks</p>
+            <p className="text-xs text-text-3 mt-1">
+              In Razorpay → Settings → Webhooks, add{' '}
+              <code className="bg-bg-2 px-1 rounded">
+                {(process.env.NEXT_PUBLIC_STUDENT_APP_URL ?? 'https://your-student-app-domain') + '/api/v1/payments/webhook'}
+              </code>{' '}
+              — this is your <strong>student app</strong> URL (not this admin URL), with events <em>payment.captured</em>, <em>payment.failed</em>.
+            </p>
           </div>
 
           {error && <p className="text-xs text-red-500">{error}</p>}

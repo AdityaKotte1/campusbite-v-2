@@ -37,10 +37,14 @@ export async function middleware(request: NextRequest) {
   const isAuthCallback = pathname.startsWith('/auth/');
   const isApiRoute = pathname.startsWith('/api/v1/kiosk/');
   const isHealthCheck = pathname === '/api/health';
+  // Server-to-server endpoints that must NOT be redirected to /login:
+  // the Razorpay subscription webhook and the Vercel cron job.
+  const isServerToServer =
+    pathname === '/api/v1/admin/subscriptions/webhook' || pathname.startsWith('/api/v1/cron/');
   const isRoot = pathname === '/';
 
-  // Allow kiosk API routes and the public health check without session check
-  if (isApiRoute || isHealthCheck) {
+  // Allow kiosk API routes, the health check, and server-to-server hooks.
+  if (isApiRoute || isHealthCheck || isServerToServer) {
     return supabaseResponse;
   }
 
@@ -118,6 +122,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
