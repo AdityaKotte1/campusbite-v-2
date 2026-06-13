@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { Plus, Eye, Printer } from 'lucide-react';
+import { Plus, Eye, Printer, MonitorOff } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -68,8 +68,20 @@ export default function KiosksPage() {
               ))
             ) : kiosks.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-5 py-10 text-center text-text-3">
-                  No kiosks registered yet
+                <td colSpan={7} className="px-5 py-14">
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-bg-2 flex items-center justify-center">
+                      <MonitorOff className="w-5 h-5 text-text-3" />
+                    </div>
+                    <div>
+                      <p className="font-display text-lg font-semibold text-text tracking-tight">
+                        No kiosks registered yet
+                      </p>
+                      <p className="text-sm text-text-3 mt-0.5">
+                        Register a kiosk to start scanning order tokens.
+                      </p>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ) : (

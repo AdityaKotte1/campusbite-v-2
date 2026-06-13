@@ -10,8 +10,6 @@ import {
   Loader2,
   Building2,
   Store,
-  CheckCircle2,
-  XCircle,
 } from 'lucide-react';
 import { StatCard } from '@/components/ui/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -89,7 +87,7 @@ export default function DashboardPage() {
           label="Active Orders"
           value={stats ? String(stats.active_orders) : '—'}
           icon={<Clock className="w-5 h-5" />}
-          iconColor="bg-orange-50 text-orange-600"
+          iconColor="bg-amber-pale text-amber"
         />
         {role !== 'staff' && (
           <StatCard
@@ -106,7 +104,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Revenue (Last 7 Days)</CardTitle>
+              <CardTitle className="font-display tracking-tight">Revenue (Last 7 Days)</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -121,7 +119,7 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Orders (Last 7 Days)</CardTitle>
+              <CardTitle className="font-display tracking-tight">Orders (Last 7 Days)</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -139,7 +137,7 @@ export default function DashboardPage() {
       {/* ── Recent Orders ── */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Orders</CardTitle>
+          <CardTitle className="font-display tracking-tight">Recent Orders</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
@@ -220,7 +218,7 @@ function InstituteOverview() {
     <Card>
       <CardHeader className="flex flex-row items-center gap-2">
         <Building2 className="w-5 h-5 text-brand" />
-        <CardTitle>Institutes Overview</CardTitle>
+        <CardTitle className="font-display tracking-tight">Institutes Overview</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         {isLoading ? (
@@ -307,7 +305,7 @@ function CanteenOverview() {
     <Card>
       <CardHeader className="flex flex-row items-center gap-2">
         <Store className="w-5 h-5 text-brand" />
-        <CardTitle>Your Canteens</CardTitle>
+        <CardTitle className="font-display tracking-tight">Your Canteens</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -333,25 +331,14 @@ function CanteenOverview() {
                       <p className="text-xs text-text-3 mt-0.5">{canteen.location}</p>
                     )}
                   </div>
-                  <span
-                    className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${
-                      canteen.is_open
-                        ? 'bg-green-50 text-green-700 border-green-200'
-                        : 'bg-red-50 text-red-600 border-red-200'
-                    }`}
-                  >
-                    {canteen.is_open ? (
-                      <>
-                        <CheckCircle2 className="w-3 h-3" />
-                        Open
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="w-3 h-3" />
-                        Closed
-                      </>
-                    )}
-                  </span>
+                  <Badge variant={canteen.is_open ? 'success' : 'danger'} className="gap-1.5">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        canteen.is_open ? 'bg-green' : 'bg-red-500'
+                      }`}
+                    />
+                    {canteen.is_open ? 'Open' : 'Closed'}
+                  </Badge>
                 </div>
 
                 {/* Hours */}

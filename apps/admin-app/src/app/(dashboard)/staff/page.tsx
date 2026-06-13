@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { Plus, Trash2, Loader2, Search, Users } from 'lucide-react';
+import { Plus, Trash2, Loader2, Search, Users, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -106,7 +106,8 @@ export default function StaffPage() {
           <select
             value={filterCanteenId}
             onChange={(e) => setFilterCanteenId(e.target.value)}
-            className="h-9 px-3 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand"
+            aria-label="Filter by canteen"
+            className="h-9 px-3 rounded-lg border border-border-2 bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all"
           >
             <option value="">All Canteens</option>
             {canteens.map((c) => (
@@ -153,14 +154,16 @@ export default function StaffPage() {
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-14 text-center">
-                  <div className="flex flex-col items-center gap-2 text-text-3">
-                    <Users className="w-8 h-8" />
-                    <p className="font-medium">
+                <td colSpan={6} className="px-5 py-16 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-14 h-14 rounded-full bg-bg-2 flex items-center justify-center">
+                      <Users className="w-6 h-6 text-text-3" />
+                    </div>
+                    <p className="font-display text-lg font-semibold tracking-tight text-text">
                       {search || filterCanteenId ? 'No staff match your filters' : 'No staff members yet'}
                     </p>
                     {!search && !filterCanteenId && (
-                      <p className="text-xs">Add a staff member to get started.</p>
+                      <p className="text-sm text-text-3">Add a staff member to get started.</p>
                     )}
                   </div>
                 </td>
@@ -174,7 +177,7 @@ export default function StaffPage() {
                   {/* Avatar + Name */}
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-brand-pale text-brand flex items-center justify-center text-xs font-semibold shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-brand-pale text-brand flex items-center justify-center font-display text-xs font-semibold shrink-0">
                         {initials(s.full_name)}
                       </div>
                       <div>
@@ -203,7 +206,8 @@ export default function StaffPage() {
 
                   {/* Status */}
                   <td className="px-5 py-3">
-                    <Badge variant={s.is_active ? 'success' : 'danger'}>
+                    <Badge variant={s.is_active ? 'success' : 'danger'} className="gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${s.is_active ? 'bg-green' : 'bg-text-3'}`} />
                       {s.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </td>
@@ -283,16 +287,19 @@ function AddStaffDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-surface rounded-xl border border-border shadow-xl w-full max-w-md">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-base font-semibold text-text">Add Staff Member</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-md">
+        <div className="px-5 py-4 border-b border-border flex items-start justify-between">
+          <div>
+            <p className="eyebrow">Team</p>
+            <h2 className="font-display text-lg font-semibold tracking-tight text-text">Add Staff Member</h2>
+          </div>
           <button
             onClick={onClose}
-            className="text-text-3 hover:text-text text-xl leading-none"
+            className="text-text-3 hover:text-text transition rounded-lg p-1 hover:bg-bg-2"
             aria-label="Close"
           >
-            ×
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -329,8 +336,8 @@ function AddStaffDialog({
             </label>
             <select
               {...register('canteen_id')}
-              className={`w-full h-9 px-3 rounded-lg border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand ${
-                errors.canteen_id ? 'border-red-400' : 'border-border'
+              className={`w-full h-9 px-3 rounded-lg border bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all ${
+                errors.canteen_id ? 'border-red-400' : 'border-border-2'
               }`}
               defaultValue=""
             >

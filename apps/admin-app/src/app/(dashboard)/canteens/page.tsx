@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import {
   Pencil, PowerOff, Power, ToggleLeft, ToggleRight, Loader2,
-  Store, Clock, MapPin, Upload, ImageIcon, ChevronDown,
+  Store, Clock, MapPin, Upload, ImageIcon, ChevronDown, X,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -106,7 +106,8 @@ export default function CanteensPage() {
             <select
               value={selectedInstituteId}
               onChange={(e) => setSelectedInstituteId(e.target.value)}
-              className="h-9 pl-3 pr-8 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand appearance-none"
+              aria-label="Filter by institute"
+              className="h-9 pl-3 pr-8 rounded-lg border border-border-2 bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand appearance-none transition-all"
             >
               <option value="all">All Institutes</option>
               {institutes.map((inst) => (
@@ -117,8 +118,8 @@ export default function CanteensPage() {
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none" />
           </div>
-          <p className="text-sm text-text-3">
-            {canteens.length} canteen{canteens.length !== 1 ? 's' : ''}
+          <p className="font-display text-sm font-semibold tracking-tight text-text-2">
+            <span className="tabular-nums">{canteens.length}</span> canteen{canteens.length !== 1 ? 's' : ''}
           </p>
         </div>
       )}
@@ -135,10 +136,12 @@ export default function CanteensPage() {
           ))}
         </div>
       ) : canteens.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-text-3 gap-3">
-          <Store className="w-12 h-12 opacity-30" />
-          <p className="font-medium">No canteens found</p>
-          <p className="text-sm">
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <div className="w-16 h-16 rounded-full bg-amber-pale flex items-center justify-center">
+            <Store className="w-7 h-7 text-amber-dark" />
+          </div>
+          <p className="font-display text-xl font-semibold tracking-tight text-text">No canteens found</p>
+          <p className="text-sm text-text-3">
             {isSuperAdmin
               ? 'Add a canteen from the Institutes page.'
               : 'No canteens are assigned to your institute yet.'}
@@ -205,26 +208,22 @@ function CanteenCard({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Store className="w-10 h-10 text-text-3 opacity-40" />
+          <div className="w-full h-full flex items-center justify-center bg-brand-pale">
+            <Store className="w-10 h-10 text-brand opacity-50" />
           </div>
         )}
 
         {/* Status badges */}
         <div className="absolute top-2 left-2 flex gap-1.5">
-          <span
-            className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-              canteen.is_open
-                ? 'bg-green-50 text-green-700 border-green-200'
-                : 'bg-red-50 text-red-600 border-red-200'
-            }`}
-          >
+          <Badge variant={canteen.is_open ? 'success' : 'danger'} className="gap-1.5 shadow-sm">
+            <span className={`w-1.5 h-1.5 rounded-full ${canteen.is_open ? 'bg-green' : 'bg-red-500'}`} />
             {canteen.is_open ? 'Open' : 'Closed'}
-          </span>
+          </Badge>
           {!canteen.is_active && (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">
+            <Badge variant="default" className="gap-1.5 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-text-3" />
               Inactive
-            </span>
+            </Badge>
           )}
         </div>
       </div>
@@ -232,7 +231,7 @@ function CanteenCard({
       {/* Body */}
       <div className="p-4 space-y-3">
         <div>
-          <h3 className="font-bold text-text text-base">{canteen.name}</h3>
+          <h3 className="font-display font-semibold tracking-tight text-text text-base">{canteen.name}</h3>
           {canteen.description && (
             <p className="text-xs text-text-3 mt-0.5 line-clamp-2">{canteen.description}</p>
           )}
@@ -256,12 +255,12 @@ function CanteenCard({
         {(canteen.today_orders !== undefined || canteen.today_revenue_paise !== undefined) && (
           <div className="flex gap-4 pt-1 border-t border-border">
             <div>
-              <p className="text-xs text-text-3">Orders today</p>
-              <p className="text-sm font-semibold text-text">{canteen.today_orders ?? 0}</p>
+              <p className="eyebrow">Orders today</p>
+              <p className="font-display text-base font-semibold tracking-tight text-text tabular-nums">{canteen.today_orders ?? 0}</p>
             </div>
             <div>
-              <p className="text-xs text-text-3">Revenue today</p>
-              <p className="text-sm font-semibold text-text">
+              <p className="eyebrow">Revenue today</p>
+              <p className="font-display text-base font-semibold tracking-tight text-text tabular-nums">
                 {canteen.today_revenue_paise !== undefined
                   ? formatCurrency(canteen.today_revenue_paise)
                   : '—'}
@@ -278,7 +277,7 @@ function CanteenCard({
             title={canteen.is_open ? 'Mark as Closed' : 'Mark as Open'}
             className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors flex-1 justify-center ${
               canteen.is_open
-                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                ? 'bg-green-light text-green-dark border-green/20 hover:bg-green-light/70'
                 : 'bg-bg-2 text-text-2 border-border hover:bg-bg'
             }`}
           >
@@ -391,16 +390,17 @@ function EditCanteenDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 overflow-y-auto">
-      <div className="bg-surface rounded-2xl border border-border shadow-xl w-full max-w-lg my-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
+      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-lg my-4">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-border flex items-start justify-between">
           <div>
-            <h2 className="text-base font-semibold text-text">Edit Canteen</h2>
+            <p className="eyebrow">Canteen</p>
+            <h2 className="font-display text-lg font-semibold tracking-tight text-text">Edit Canteen</h2>
             <p className="text-xs text-text-3 mt-0.5">{canteen.name}</p>
           </div>
-          <button onClick={onClose} className="text-text-3 hover:text-text text-xl leading-none">
-            ×
+          <button onClick={onClose} aria-label="Close" className="text-text-3 hover:text-text transition rounded-lg p-1 hover:bg-bg-2">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -419,8 +419,8 @@ function EditCanteenDialog({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <ImageIcon className="w-8 h-8 text-text-3 opacity-40" />
+                <div className="w-full h-full flex items-center justify-center bg-brand-pale">
+                  <ImageIcon className="w-8 h-8 text-brand opacity-50" />
                 </div>
               )}
             </div>
@@ -505,7 +505,7 @@ function EditCanteenDialog({
               {...register('description')}
               rows={2}
               placeholder="Short description of the canteen…"
-              className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-border-2 bg-surface text-sm text-text placeholder:text-text-3 hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand resize-none transition-all"
             />
           </div>
 

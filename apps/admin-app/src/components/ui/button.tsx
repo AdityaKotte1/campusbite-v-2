@@ -4,16 +4,16 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
   {
     variants: {
       variant: {
-        default: 'bg-brand text-white hover:bg-brand-dark',
-        secondary: 'bg-bg border border-border text-text hover:bg-border',
-        outline: 'border border-border bg-surface text-text hover:bg-bg',
-        ghost: 'text-text hover:bg-bg',
-        destructive: 'bg-red-600 text-white hover:bg-red-700',
-        success: 'bg-green text-white hover:bg-green-dark',
+        default: 'bg-brand text-white hover:bg-brand-dark shadow-warm hover:shadow-lg',
+        secondary: 'bg-surface border border-border-2 text-text hover:bg-bg-2 hover:border-text-3',
+        outline: 'border border-border-2 bg-surface text-text hover:bg-bg-2',
+        ghost: 'text-text-2 hover:bg-bg-2 hover:text-text',
+        destructive: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
+        success: 'bg-green text-white hover:bg-green-dark shadow-sm',
         link: 'text-brand underline-offset-4 hover:underline p-0 h-auto',
       },
       size: {

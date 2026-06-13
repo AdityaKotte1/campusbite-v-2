@@ -2,35 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 :root {
-  --font-inter: 'Inter', system-ui, sans-serif;
+  /* Brand — appetite red-orange (primary CTA) */
+  --brand: #DD3A11;
+  --brand-dark: #B62D0A;
+  --brand-light: #F06A3C;
+  --brand-pale: #FBEADF;
 
-  /* Brand */
-  --brand: #E8390E;
-  --brand-dark: #C12E0A;
-  --brand-light: #FF6B40;
-  --brand-pale: #FFF0EC;
+  /* Amber — editorial accent */
+  --amber: #C17A16;
+  --amber-dark: #94590C;
+  --amber-light: #EBC178;
+  --amber-pale: #FBF0DC;
 
-  /* Green */
-  --green: #00A877;
-  --green-dark: #007A57;
-  --green-light: #E6F9F4;
+  /* Green — success */
+  --green: #1E8A5A;
+  --green-dark: #14613E;
+  --green-light: #E2F1E8;
 
-  /* Surfaces */
+  /* Surfaces & cream paper */
   --surface: #FFFFFF;
-  --bg: #F5F5F5;
-  --bg2: #FAFAFA;
+  --surface-2: #FFFCF5;
+  --bg: #F4ECDD;
+  --bg2: #FBF6EC;
 
-  /* Text */
-  --text: #111111;
-  --text2: #555555;
-  --text3: #999999;
+  /* Warm charcoal ink */
+  --text: #241D15;
+  --text2: #6B5D4D;
+  --text3: #9D8E7B;
 
-  /* Border */
-  --border: #EBEBEB;
-  --border2: #E0E0E0;
+  /* Warm hairline borders */
+  --border: #E9DFCD;
+  --border2: #DBCDB3;
 }
 
 * {
@@ -38,9 +41,38 @@
 }
 
 html {
-  font-family: var(--font-inter);
+  font-family: var(--font-inter), 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: var(--font-fraunces), Fraunces, Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.rule-amber {
+  height: 2px;
+  width: 40px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--brand), var(--amber-light));
+}
+
+.card-editorial {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px 0 rgba(74, 53, 30, 0.04);
+  transition: box-shadow 200ms ease, border-color 200ms ease;
 }
 
 body {

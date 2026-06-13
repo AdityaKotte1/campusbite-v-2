@@ -57,7 +57,7 @@ const columns: ColumnDef<AuditLog>[] = [
           {row.original.entity_type ?? '—'}
         </p>
         {row.original.entity_id && (
-          <p className="font-mono text-xs text-text-3">{row.original.entity_id.slice(0, 8)}…</p>
+          <p className="font-mono text-xs text-text-3 tabular-nums">{row.original.entity_id.slice(0, 8)}…</p>
         )}
       </div>
     ),
@@ -66,14 +66,14 @@ const columns: ColumnDef<AuditLog>[] = [
     accessorKey: 'ip_address',
     header: 'IP Address',
     cell: ({ row }) => (
-      <span className="font-mono text-xs text-text-3">{row.original.ip_address ?? '—'}</span>
+      <span className="font-mono text-xs text-text-3 tabular-nums">{row.original.ip_address ?? '—'}</span>
     ),
   },
   {
     accessorKey: 'created_at',
     header: 'Timestamp',
     cell: ({ row }) => (
-      <span className="text-xs text-text-3">{formatDateTime(row.original.created_at)}</span>
+      <span className="text-xs text-text-3 tabular-nums">{formatDateTime(row.original.created_at)}</span>
     ),
   },
 ];

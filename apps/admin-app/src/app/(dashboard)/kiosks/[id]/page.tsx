@@ -57,7 +57,7 @@ export default function KioskDetailPage() {
           </Button>
         </Link>
         <div className="flex-1">
-          <h2 className="text-lg font-bold text-text">{kiosk.name}</h2>
+          <h2 className="font-display text-xl font-semibold text-text tracking-tight">{kiosk.name}</h2>
           <p className="text-xs text-text-3">{kiosk.location ?? 'No location set'}</p>
         </div>
         <KioskStatusIndicator lastHeartbeat={kiosk.last_heartbeat} />
@@ -74,7 +74,7 @@ export default function KioskDetailPage() {
         {/* Hardware Info */}
         <div className="lg:col-span-1 space-y-4">
           <Card>
-            <CardHeader><CardTitle>Hardware Info</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-display tracking-tight">Hardware Info</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
               <Row label="Device ID" value={kiosk.device_id} mono />
               <Row label="Firmware" value={kiosk.firmware_version ?? '—'} />
@@ -85,7 +85,7 @@ export default function KioskDetailPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Last Heartbeat</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-display tracking-tight">Last Heartbeat</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
               <Row label="Time" value={kiosk.last_heartbeat ? formatDateTime(kiosk.last_heartbeat) : 'Never'} />
               <Row label="Printer" value={heartbeatData?.printer_status ?? '—'} />
@@ -97,7 +97,7 @@ export default function KioskDetailPage() {
         {/* Scan History */}
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader><CardTitle>Last 100 Scans</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-display tracking-tight">Last 100 Scans</CardTitle></CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">

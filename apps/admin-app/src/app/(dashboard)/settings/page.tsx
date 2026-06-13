@@ -98,14 +98,14 @@ function RazorpayKeyForm({
           {currentKeyMask ? (
             <CheckCircle2 className="w-4 h-4 text-green flex-shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 text-amber flex-shrink-0" />
           )}
           <div>
             <p className="text-sm font-medium text-text">{name}</p>
             {currentKeyMask ? (
               <p className="text-xs text-text-3 font-mono">{currentKeyMask}</p>
             ) : (
-              <p className="text-xs text-amber-600">Not configured — will use {target === 'canteen' ? 'institute' : 'platform'} account</p>
+              <p className="text-xs text-amber-dark">Not configured — will use {target === 'canteen' ? 'institute' : 'platform'} account</p>
             )}
           </div>
         </div>
@@ -123,8 +123,9 @@ function RazorpayKeyForm({
 
       {open && (
         <div className="mt-3 rounded-xl border border-border bg-bg-2 p-4 space-y-3">
-          <p className="text-xs text-text-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            ⚠ Keys are encrypted with AES-256-GCM before storage. The secret is never stored in plaintext and cannot be retrieved after saving.
+          <p className="flex items-start gap-2 text-xs text-amber-dark bg-amber-pale border border-amber/25 rounded-lg px-3 py-2">
+            <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+            <span>Keys are encrypted with AES-256-GCM before storage. The secret is never stored in plaintext and cannot be retrieved after saving.</span>
           </p>
 
           <div>
@@ -284,7 +285,7 @@ function PaymentSettings() {
           <CardContent className="pt-0 pb-4 px-5 space-y-4">
             {/* Institute-level Razorpay config */}
             <div className="border border-border rounded-xl p-4">
-              <p className="text-xs font-semibold text-text-3 uppercase tracking-wide mb-3">
+              <p className="eyebrow mb-3">
                 Institute Razorpay Account
               </p>
               <RazorpayKeyForm
@@ -302,7 +303,7 @@ function PaymentSettings() {
               <div className="border border-border rounded-xl overflow-hidden">
                 <div className="px-4 py-2.5 bg-bg-2 border-b border-border flex items-center gap-2">
                   <Store className="w-3.5 h-3.5 text-text-3" />
-                  <p className="text-xs font-semibold text-text-3 uppercase tracking-wide">
+                  <p className="eyebrow">
                     Per-Canteen Override ({inst.canteens.length})
                   </p>
                 </div>
@@ -339,12 +340,12 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-3xl space-y-5">
-      <div className="flex gap-1 bg-bg rounded-lg p-1 w-fit flex-wrap">
+      <div className="flex gap-1 bg-bg-2 border border-border rounded-xl p-1 w-fit flex-wrap">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
               tab === t ? 'bg-surface shadow-sm text-text' : 'text-text-2 hover:text-text'
             }`}
           >
@@ -355,7 +356,7 @@ export default function SettingsPage() {
 
       {tab === 'General' && (
         <Card>
-          <CardHeader><CardTitle>General Settings</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="font-display tracking-tight">General Settings</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <Field label="Platform Name" defaultValue="CampusBite" />
             <Field label="Support Email" defaultValue="support@campusbite.in" type="email" />
@@ -370,7 +371,7 @@ export default function SettingsPage() {
 
       {tab === 'Notifications' && (
         <Card>
-          <CardHeader><CardTitle>Notification Settings</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="font-display tracking-tight">Notification Settings</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <Toggle label="Order confirmation emails" defaultChecked />
             <Toggle label="Order ready SMS" defaultChecked />
@@ -383,7 +384,7 @@ export default function SettingsPage() {
 
       {tab === 'Security' && (
         <Card>
-          <CardHeader><CardTitle>Security Settings</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="font-display tracking-tight">Security Settings</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <Toggle label="Require 2FA for admin accounts" />
             <Toggle label="Enforce password rotation (90 days)" defaultChecked />
@@ -418,7 +419,7 @@ function Toggle({ label, defaultChecked = false }: { label: string; defaultCheck
         onClick={() => setChecked(!checked)}
         className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? 'bg-brand' : 'bg-border-2'}`}
       >
-        <span className={`inline-block h-4 w-4 m-0.5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
+        <span className={`inline-block h-4 w-4 m-0.5 rounded-full bg-surface shadow transition-transform ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
       </button>
     </label>
   );

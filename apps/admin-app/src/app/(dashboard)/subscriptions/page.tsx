@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { Building2, BadgeCheck, IndianRupee, Inbox } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { StatCard } from '@/components/ui/stat-card';
 import { ManageSubscriptionDialog } from '@/components/subscriptions/manage-subscription-dialog';
 import { formatPaise } from '@/lib/subscription-pricing';
 
@@ -55,26 +57,37 @@ export default function SubscriptionsPage() {
   const activeCount = rows.filter((r) => r.subscription?.status === 'active').length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-text">Subscriptions</h2>
-        <p className="text-sm text-text-3">Manage institute subscriptions and billing.</p>
+        <p className="eyebrow">Revenue</p>
+        <h2 className="font-display text-2xl font-semibold text-text tracking-tight">Subscriptions</h2>
+        <p className="text-sm text-text-3 mt-1">Manage institute subscriptions and billing.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SummaryCard label="Institutes" value={String(rows.length)} />
-        <SummaryCard label="Active subscribers" value={String(activeCount)} />
-        <SummaryCard label="MRR (pre-GST)" value={formatPaise(mrrPaise)} />
+        <StatCard label="Institutes" value={String(rows.length)} icon={<Building2 className="w-4 h-4" />} />
+        <StatCard
+          label="Active subscribers"
+          value={String(activeCount)}
+          icon={<BadgeCheck className="w-4 h-4" />}
+          iconColor="bg-green-light text-green-dark"
+        />
+        <StatCard
+          label="MRR (pre-GST)"
+          value={formatPaise(mrrPaise)}
+          icon={<IndianRupee className="w-4 h-4" />}
+          iconColor="bg-amber-pale text-amber-dark"
+        />
       </div>
 
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
+      <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr>
               {['Institute', 'Canteens', 'Students', 'Plan', 'Cycle', 'Status', 'Renews', ''].map((h, i) => (
                 <th
                   key={i}
-                  className="h-10 px-4 text-left text-xs font-semibold text-text-3 uppercase tracking-wide bg-bg-2 border-b border-border"
+                  className="h-10 px-4 text-left text-xs font-semibold text-text-3 uppercase tracking-wider bg-bg-2 border-b border-border"
                 >
                   {h}
                 </th>
@@ -90,8 +103,14 @@ export default function SubscriptionsPage() {
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-text-3">
-                  No institutes yet
+                <td colSpan={8} className="px-4 py-14">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-12 h-12 rounded-full bg-bg-2 flex items-center justify-center mb-3">
+                      <Inbox className="w-5 h-5 text-text-3" />
+                    </div>
+                    <p className="font-display text-lg font-semibold text-text">No institutes yet</p>
+                    <p className="text-sm text-text-3 mt-1">Subscriptions appear here once institutes are onboarded.</p>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -100,14 +119,14 @@ export default function SubscriptionsPage() {
                 return (
                   <tr key={r.institute_id} className="border-b border-border last:border-0 hover:bg-bg-2 transition-colors">
                     <td className="px-4 py-3 font-medium text-text">{r.institute_name}</td>
-                    <td className="px-4 py-3 text-text-2">{r.canteen_count}</td>
-                    <td className="px-4 py-3 text-text-2">{r.student_count.toLocaleString('en-IN')}</td>
+                    <td className="px-4 py-3 text-text-2 tabular-nums">{r.canteen_count}</td>
+                    <td className="px-4 py-3 text-text-2 tabular-nums">{r.student_count.toLocaleString('en-IN')}</td>
                     <td className="px-4 py-3 text-text-2 capitalize">{s?.plan_code ?? '—'}</td>
                     <td className="px-4 py-3 text-text-2 capitalize">{s?.billing_cycle ?? '—'}</td>
                     <td className="px-4 py-3">
                       <Badge variant={STATUS_VARIANT[s?.status ?? ''] ?? 'default'}>{s?.status ?? 'none'}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-xs text-text-3">
+                    <td className="px-4 py-3 text-xs text-text-3 tabular-nums">
                       {s?.current_period_end ? new Date(s.current_period_end).toLocaleDateString('en-IN') : '—'}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -126,15 +145,6 @@ export default function SubscriptionsPage() {
       {manage && (
         <ManageSubscriptionDialog row={manage} onClose={() => setManage(null)} onDone={() => refetch()} />
       )}
-    </div>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-surface rounded-xl border border-border p-4">
-      <p className="text-xs text-text-3">{label}</p>
-      <p className="text-xl font-bold text-text mt-1">{value}</p>
     </div>
   );
 }

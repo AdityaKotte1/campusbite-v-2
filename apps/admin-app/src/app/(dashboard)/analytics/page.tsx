@@ -29,7 +29,7 @@ const DAYS_OPTIONS = [
   { label: 'Last 90 days', value: 90 },
 ];
 
-const PIE_COLORS = ['#E8390E', '#00A877', '#3B82F6', '#F59E0B', '#8B5CF6'];
+const PIE_COLORS = ['#DD3A11', '#1E8A5A', '#3B82F6', '#C17A16', '#8B5CF6'];
 
 export default function AnalyticsPage() {
   const [days, setDays] = useState(30);
@@ -62,10 +62,10 @@ export default function AnalyticsPage() {
           <button
             key={opt.value}
             onClick={() => setDays(opt.value)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium border transition ${
               days === opt.value
-                ? 'bg-brand text-white'
-                : 'bg-surface border border-border text-text-2 hover:text-text'
+                ? 'bg-brand-pale text-brand border-brand/20'
+                : 'bg-surface border-border-2 text-text-2 hover:text-text hover:border-border'
             }`}
           >
             {opt.label}
@@ -76,7 +76,7 @@ export default function AnalyticsPage() {
       {/* Revenue over time */}
       <Card>
         <CardHeader>
-          <CardTitle>Revenue Over Time</CardTitle>
+          <CardTitle className="font-display tracking-tight">Revenue Over Time</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#999' }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(v) => `₹${v}`} tick={{ fontSize: 11, fill: '#999' }} axisLine={false} tickLine={false} width={60} />
                 <Tooltip formatter={(v: number) => [`₹${v.toFixed(0)}`, 'Revenue']} />
-                <Line type="monotone" dataKey="revenue" stroke="#E8390E" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="revenue" stroke="#DD3A11" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -101,7 +101,7 @@ export default function AnalyticsPage() {
         {/* Top Items */}
         <Card>
           <CardHeader>
-            <CardTitle>Top 10 Items by Orders</CardTitle>
+            <CardTitle className="font-display tracking-tight">Top 10 Items by Orders</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -115,7 +115,7 @@ export default function AnalyticsPage() {
                   <XAxis type="number" tick={{ fontSize: 11, fill: '#999' }} axisLine={false} tickLine={false} />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#555' }} axisLine={false} tickLine={false} width={120} />
                   <Tooltip />
-                  <Bar dataKey="total_orders" fill="#E8390E" radius={[0, 4, 4, 0]} name="Orders" />
+                  <Bar dataKey="total_orders" fill="#DD3A11" radius={[0, 4, 4, 0]} name="Orders" />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -125,7 +125,7 @@ export default function AnalyticsPage() {
         {/* Orders by Hour */}
         <Card>
           <CardHeader>
-            <CardTitle>Orders by Hour of Day</CardTitle>
+            <CardTitle className="font-display tracking-tight">Orders by Hour of Day</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#999' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: '#999' }} axisLine={false} tickLine={false} width={35} />
                   <Tooltip />
-                  <Bar dataKey="orders" fill="#00A877" radius={[4, 4, 0, 0]} name="Orders" />
+                  <Bar dataKey="orders" fill="#1E8A5A" radius={[4, 4, 0, 0]} name="Orders" />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -150,7 +150,7 @@ export default function AnalyticsPage() {
       {/* Payment Methods */}
       <Card>
         <CardHeader>
-          <CardTitle>Payment Method Breakdown</CardTitle>
+          <CardTitle className="font-display tracking-tight">Payment Method Breakdown</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col lg:flex-row items-center gap-8">
           {isLoading ? (

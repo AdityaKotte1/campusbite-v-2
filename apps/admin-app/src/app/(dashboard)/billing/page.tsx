@@ -119,16 +119,17 @@ export default function BillingPage() {
   const status = sub?.status ?? 'none';
 
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="max-w-3xl space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-text">Billing &amp; Subscription</h2>
-        <p className="text-sm text-text-3">{me.institute?.name}</p>
+        <p className="eyebrow">Billing &amp; Subscription</p>
+        <h2 className="font-display text-2xl font-semibold text-text tracking-tight">{me.institute?.name}</h2>
+        <p className="text-sm text-text-3 mt-1">Manage your plan, renewals and invoices.</p>
       </div>
 
       {msg && (
         <div
           className={`flex items-start gap-2 p-3 rounded-xl border text-sm ${
-            msg.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'
+            msg.type === 'success' ? 'bg-green-light border-green/20 text-green-dark' : 'bg-red-50 border-red-200 text-red-700'
           }`}
         >
           {msg.type === 'success' ? <CheckCircle2 className="w-4 h-4 mt-0.5" /> : <AlertTriangle className="w-4 h-4 mt-0.5" />}
@@ -137,14 +138,14 @@ export default function BillingPage() {
       )}
 
       {/* Current status */}
-      <div className="bg-surface rounded-xl border border-border p-5">
+      <div className="bg-surface rounded-xl border border-border shadow-sm p-5">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-text-3">Current status</p>
-            <div className="flex items-center gap-2 mt-1">
+            <p className="eyebrow mb-2">Current status</p>
+            <div className="flex items-center gap-2">
               <Badge variant={STATUS_VARIANT[status] ?? 'default'}>{status}</Badge>
               {sub?.current_period_end && (
-                <span className="text-sm text-text-2">
+                <span className="text-sm text-text-2 tabular-nums">
                   {status === 'expired' || status === 'cancelled' ? 'Ended' : 'Renews'}{' '}
                   {new Date(sub.current_period_end).toLocaleDateString('en-IN')}
                 </span>
@@ -152,68 +153,80 @@ export default function BillingPage() {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-text-3">Usage</p>
-            <p className="text-sm text-text mt-1">
+            <p className="eyebrow mb-2">Usage</p>
+            <p className="text-sm text-text tabular-nums">
               {me.canteens} canteen{me.canteens === 1 ? '' : 's'} · {me.students.toLocaleString('en-IN')} students
             </p>
-            <p className="text-xs text-text-3">Tier: {studentTierLabel(me.students)}</p>
+            <p className="text-xs text-text-3 mt-0.5">Tier: {studentTierLabel(me.students)}</p>
           </div>
         </div>
       </div>
 
       {/* Pay / renew */}
-      <div className="bg-surface rounded-xl border border-border p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-text">
+      <div className="bg-surface rounded-xl border border-border shadow-sm p-5 space-y-4">
+        <p className="font-display text-lg font-semibold text-text tracking-tight">
           {status === 'active' ? 'Renew / change plan' : 'Activate subscription'}
-        </h3>
+        </p>
 
         {!me.razorpay_enabled && (
-          <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-            Online payment isn&apos;t enabled yet. Please contact CampusBite to activate.
+          <p className="flex items-start gap-2 text-sm text-amber-dark bg-amber-pale border border-amber/25 rounded-lg px-3 py-2">
+            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>Online payment isn&apos;t enabled yet. Please contact CampusBite to activate.</span>
           </p>
         )}
 
-        {/* Cycle picker */}
-        <div className="grid grid-cols-3 gap-2">
-          {me.quotes.map((q) => (
-            <button
-              key={q.cycle}
-              onClick={() => setCycle(q.cycle)}
-              className={`p-3 rounded-lg border text-left transition ${
-                cycle === q.cycle ? 'border-brand bg-brand-pale' : 'border-border hover:bg-bg'
-              }`}
-            >
-              <p className="text-xs font-semibold text-text">
-                {q.cycle === 'monthly' ? 'Monthly' : q.cycle === 'biannual' ? '6 Months' : 'Annual'}
-              </p>
-              <p className="text-sm font-bold text-text mt-1">{formatPaise(q.totalPaise)}</p>
-              {q.discountPct > 0 && <p className="text-[11px] text-green">{Math.round(q.discountPct * 100)}% off</p>}
-            </button>
-          ))}
+        {/* Cycle picker — plan cards */}
+        <div className="grid grid-cols-3 gap-3">
+          {me.quotes.map((q) => {
+            const selected = cycle === q.cycle;
+            return (
+              <button
+                key={q.cycle}
+                onClick={() => setCycle(q.cycle)}
+                className={`relative p-4 rounded-xl border text-left transition ${
+                  selected
+                    ? 'border-brand bg-brand-pale shadow-warm'
+                    : 'border-border bg-surface hover:bg-bg-2 hover:border-border-2'
+                }`}
+              >
+                {q.discountPct > 0 && (
+                  <span className="absolute -top-2 right-2 inline-flex items-center rounded-md bg-brand px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-warm">
+                    {Math.round(q.discountPct * 100)}% off
+                  </span>
+                )}
+                <p className="eyebrow">
+                  {q.cycle === 'monthly' ? 'Monthly' : q.cycle === 'biannual' ? '6 Months' : 'Annual'}
+                </p>
+                <p className="font-display text-xl font-semibold text-text mt-1.5 tabular-nums tracking-tight">
+                  {formatPaise(q.totalPaise)}
+                </p>
+              </button>
+            );
+          })}
         </div>
 
         {/* Breakdown */}
         {quote && (
-          <div className="bg-bg rounded-lg border border-border p-3 text-sm space-y-1">
+          <div className="bg-bg-2 rounded-xl border border-border p-4 text-sm space-y-1.5">
             <div className="flex justify-between">
               <span className="text-text-2">
                 Base ({me.canteens} × ₹2,000{quote.monthlyBasePaise > me.canteens * 200000 ? ' + student tier' : ''}) × {quote.months} mo
               </span>
-              <span>{formatPaise(quote.monthlyBasePaise * quote.months)}</span>
+              <span className="tabular-nums">{formatPaise(quote.monthlyBasePaise * quote.months)}</span>
             </div>
             {quote.discountPct > 0 && (
-              <div className="flex justify-between text-green">
+              <div className="flex justify-between text-green-dark">
                 <span>Discount ({Math.round(quote.discountPct * 100)}%)</span>
-                <span>-{formatPaise(quote.monthlyBasePaise * quote.months - quote.subtotalPaise)}</span>
+                <span className="tabular-nums">-{formatPaise(quote.monthlyBasePaise * quote.months - quote.subtotalPaise)}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-text-2">GST (18%)</span>
-              <span>{formatPaise(quote.gstPaise)}</span>
+              <span className="tabular-nums">{formatPaise(quote.gstPaise)}</span>
             </div>
-            <div className="flex justify-between font-bold pt-1 border-t border-border">
-              <span>Total</span>
-              <span>{formatPaise(quote.totalPaise)}</span>
+            <div className="flex items-baseline justify-between pt-2 mt-1 border-t border-border">
+              <span className="font-semibold text-text">Total</span>
+              <span className="font-display text-xl font-semibold text-text tabular-nums tracking-tight">{formatPaise(quote.totalPaise)}</span>
             </div>
           </div>
         )}
@@ -225,22 +238,22 @@ export default function BillingPage() {
       </div>
 
       {/* Invoices */}
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <div className="px-5 py-3 border-b border-border">
-          <h3 className="text-sm font-semibold text-text">Invoices</h3>
+      <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-border bg-bg-2">
+          <p className="eyebrow">Invoices</p>
         </div>
         <table className="w-full text-sm">
           <tbody>
             {me.invoices.length === 0 ? (
               <tr>
-                <td className="px-5 py-6 text-center text-text-3">No invoices yet</td>
+                <td className="px-5 py-10 text-center text-text-3">No invoices yet</td>
               </tr>
             ) : (
               me.invoices.map((inv) => (
-                <tr key={inv.id} className="border-b border-border last:border-0">
-                  <td className="px-5 py-3 text-text-2">{new Date(inv.created_at).toLocaleDateString('en-IN')}</td>
+                <tr key={inv.id} className="border-b border-border last:border-0 hover:bg-bg-2 transition-colors">
+                  <td className="px-5 py-3 text-text-2 tabular-nums">{new Date(inv.created_at).toLocaleDateString('en-IN')}</td>
                   <td className="px-5 py-3 text-text-2 capitalize">{inv.billing_cycle}</td>
-                  <td className="px-5 py-3 text-text font-medium">{formatPaise(inv.total_paise)}</td>
+                  <td className="px-5 py-3 text-text font-display font-semibold tabular-nums">{formatPaise(inv.total_paise)}</td>
                   <td className="px-5 py-3 text-right">
                     <Badge variant={inv.status === 'paid' ? 'success' : inv.status === 'pending' ? 'warning' : 'default'}>
                       {inv.status}

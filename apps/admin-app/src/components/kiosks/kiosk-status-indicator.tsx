@@ -16,7 +16,7 @@ function getKioskHealth(lastHeartbeat: string | null): KioskHealthStatus {
 
 const HEALTH_STYLES: Record<KioskHealthStatus, { dot: string; label: string; text: string }> = {
   online: { dot: 'bg-green', label: 'Online', text: 'text-green-dark' },
-  degraded: { dot: 'bg-yellow-400', label: 'Degraded', text: 'text-yellow-700' },
+  degraded: { dot: 'bg-amber', label: 'Degraded', text: 'text-amber-dark' },
   offline: { dot: 'bg-red-500', label: 'Offline', text: 'text-red-700' },
 };
 

@@ -58,7 +58,7 @@ export default function OrderDetailPage() {
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold text-text font-mono">{data.order_number}</h2>
+            <h2 className="font-mono text-lg font-semibold text-text tracking-tight">{data.order_number}</h2>
             <OrderStatusBadge status={data.status} />
           </div>
           <p className="text-xs text-text-3 mt-0.5">{formatDateTime(data.created_at)}</p>
@@ -95,7 +95,7 @@ export default function OrderDetailPage() {
         <div className="lg:col-span-2 space-y-5">
           <Card>
             <CardHeader>
-              <CardTitle>Order Items</CardTitle>
+              <CardTitle className="font-display tracking-tight">Order Items</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <table className="w-full text-sm">
@@ -145,7 +145,7 @@ export default function OrderDetailPage() {
                   )}
                   <tr className="border-t border-border">
                     <td colSpan={3} className="px-5 py-3 text-right font-semibold text-text">Total</td>
-                    <td className="px-5 py-3 text-right font-bold text-text">{formatCurrency(data.total_paise)}</td>
+                    <td className="px-5 py-3 text-right font-display text-lg font-semibold text-text tabular-nums tracking-tight">{formatCurrency(data.total_paise)}</td>
                   </tr>
                 </tfoot>
               </table>

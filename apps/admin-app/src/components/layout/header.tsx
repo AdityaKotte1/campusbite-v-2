@@ -14,7 +14,7 @@ export function Header({ title }: HeaderProps) {
   const { user } = useAuthStore();
 
   return (
-    <header className="h-16 bg-surface border-b border-border flex items-center px-6 gap-4 shrink-0">
+    <header className="h-16 bg-surface/80 backdrop-blur-xl border-b border-border flex items-center px-6 gap-4 shrink-0 sticky top-0 z-20">
       {/* Mobile menu toggle */}
       <button
         onClick={toggleSidebar}
@@ -34,7 +34,7 @@ export function Header({ title }: HeaderProps) {
         </button>
       )}
 
-      <h1 className="text-base font-semibold text-text flex-1">{title}</h1>
+      <h1 className="font-display text-xl font-semibold text-text flex-1 tracking-tight">{title}</h1>
 
       <div className="flex items-center gap-3">
         {/* Notifications */}

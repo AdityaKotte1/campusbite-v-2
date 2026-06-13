@@ -50,8 +50,8 @@ export function RevenueChart({ data }: RevenueChartProps) {
           tickLine={false}
           width={55}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#FFF0EC' }} />
-        <Bar dataKey="revenue_paise" fill="#E8390E" radius={[4, 4, 0, 0]} />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#FBEADF' }} />
+        <Bar dataKey="revenue_paise" fill="#DD3A11" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

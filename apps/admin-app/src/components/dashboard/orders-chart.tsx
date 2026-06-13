@@ -53,9 +53,9 @@ export function OrdersChart({ data }: OrdersChartProps) {
         <Line
           type="monotone"
           dataKey="orders"
-          stroke="#00A877"
+          stroke="#1E8A5A"
           strokeWidth={2}
-          dot={{ r: 3, fill: '#00A877' }}
+          dot={{ r: 3, fill: '#1E8A5A' }}
           activeDot={{ r: 5 }}
         />
       </LineChart>

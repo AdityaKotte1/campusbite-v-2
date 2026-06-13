@@ -76,7 +76,7 @@ export function RegisterKioskDialog({
       <div className="bg-surface rounded-xl border border-border shadow-xl w-full max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-text">
+          <h2 className="font-display text-lg font-semibold text-text tracking-tight">
             {step === 'form' ? 'Register New Kiosk' : 'Kiosk Registered'}
           </h2>
           {step === 'form' && (
@@ -151,9 +151,9 @@ export function RegisterKioskDialog({
           ) : (
             <div className="space-y-4">
               {/* Warning */}
-              <div className="flex gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
-                <p className="text-sm text-yellow-700">
+              <div className="flex gap-3 p-3 bg-amber-pale border border-amber/25 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-amber shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-dark">
                   <strong>Save this API key now.</strong> It will not be shown again after you close this dialog.
                 </p>
               </div>

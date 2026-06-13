@@ -23,18 +23,25 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'bg-surface rounded-xl border border-border p-5 shadow-sm',
+        'group bg-surface rounded-xl border border-border p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-border-2',
         className
       )}
     >
       <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-medium text-text-2">{label}</span>
-        <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center', iconColor)}>
+        <span className="eyebrow">{label}</span>
+        <div
+          className={cn(
+            'w-9 h-9 rounded-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-110',
+            iconColor
+          )}
+        >
           {icon}
         </div>
       </div>
 
-      <div className="text-2xl font-bold text-text mb-1">{value}</div>
+      <div className="font-display text-3xl font-semibold text-text mb-1 tabular-nums tracking-tight">
+        {value}
+      </div>
 
       {change !== undefined && (
         <div

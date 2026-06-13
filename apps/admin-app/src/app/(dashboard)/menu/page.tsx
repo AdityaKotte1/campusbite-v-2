@@ -17,6 +17,7 @@ import {
   ImageIcon,
   Upload,
   UtensilsCrossed,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -88,12 +89,12 @@ function StockBadge({ item }: { item: MenuItemWithStock }) {
   const isLow = (item.stock_count ?? 0) <= 5;
   return (
     <span
-      className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-        isLow ? 'text-amber-700 bg-amber-50' : 'text-green-dark bg-green-light'
+      className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full tabular-nums ${
+        isLow ? 'text-amber-dark bg-amber-pale' : 'text-green-dark bg-green-light'
       }`}
     >
       <PackageCheck className="w-3 h-3" />
-      {item.stock_count} {isLow ? '⚠ Low' : 'units'}
+      {item.stock_count} {isLow ? 'Low' : 'units'}
     </span>
   );
 }
@@ -168,7 +169,7 @@ function RefillPopover({
                 onChange={(e) => setCount(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && save()}
                 placeholder="e.g. 50"
-                className="flex-1 h-8 px-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand"
+                className="flex-1 h-8 px-2 text-sm tabular-nums border border-border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all"
               />
               <button
                 onClick={save}
@@ -275,14 +276,14 @@ export default function MenuPage() {
     <div className="space-y-5">
       {/* Tabs + action button */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1 bg-bg rounded-lg p-1">
+        <div className="flex gap-1 bg-bg-2 border border-border rounded-lg p-1">
           {(['items', 'categories'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
                 tab === t
-                  ? 'bg-surface shadow-sm text-text'
+                  ? 'bg-surface shadow-sm text-brand'
                   : 'text-text-2 hover:text-text'
               }`}
             >
@@ -356,9 +357,14 @@ export default function MenuPage() {
                 <tr>
                   <td
                     colSpan={itemTableHeaders.length}
-                    className="px-4 py-12 text-center text-text-3"
+                    className="px-4 py-16 text-center"
                   >
-                    No menu items yet
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-14 h-14 rounded-full bg-amber-pale flex items-center justify-center">
+                        <UtensilsCrossed className="w-6 h-6 text-amber-dark" />
+                      </div>
+                      <p className="font-display text-lg font-semibold tracking-tight text-text">No menu items yet</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -382,8 +388,8 @@ export default function MenuPage() {
                             className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-border"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-bg-2 border border-border flex items-center justify-center flex-shrink-0">
-                            <UtensilsCrossed className="w-4 h-4 text-text-3" />
+                          <div className="w-10 h-10 rounded-lg bg-brand-pale border border-border flex items-center justify-center flex-shrink-0">
+                            <UtensilsCrossed className="w-4 h-4 text-brand" />
                           </div>
                         )}
                         <div className="min-w-0">
@@ -408,7 +414,7 @@ export default function MenuPage() {
                     </td>
 
                     {/* Price */}
-                    <td className="px-4 py-3 font-medium text-text whitespace-nowrap">
+                    <td className="px-4 py-3 font-display font-semibold tracking-tight text-text whitespace-nowrap tabular-nums">
                       {formatCurrency(item.price_paise)}
                     </td>
 
@@ -527,8 +533,13 @@ export default function MenuPage() {
                 </tr>
               ) : categories.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-text-3">
-                    No categories yet
+                  <td colSpan={7} className="px-4 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-14 h-14 rounded-full bg-amber-pale flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6 text-amber-dark" />
+                      </div>
+                      <p className="font-display text-lg font-semibold tracking-tight text-text">No categories yet</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -553,16 +564,17 @@ export default function MenuPage() {
                     </td>
 
                     {/* Items count */}
-                    <td className="px-4 py-3 text-text-2">
+                    <td className="px-4 py-3 text-text-2 tabular-nums">
                       {itemCountByCategory[cat.id] ?? 0}
                     </td>
 
                     {/* Sort Order */}
-                    <td className="px-4 py-3 text-text-2">{cat.sort_order}</td>
+                    <td className="px-4 py-3 text-text-2 tabular-nums">{cat.sort_order}</td>
 
                     {/* Active */}
                     <td className="px-4 py-3">
-                      <Badge variant={cat.is_active ? 'success' : 'default'}>
+                      <Badge variant={cat.is_active ? 'success' : 'default'} className="gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${cat.is_active ? 'bg-green' : 'bg-text-3'}`} />
                         {cat.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>
@@ -736,14 +748,17 @@ function MenuItemDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 overflow-y-auto">
-      <div className="bg-surface rounded-xl border border-border shadow-xl w-full max-w-lg my-4">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-base font-semibold text-text">
-            {isEdit ? 'Edit Menu Item' : 'Add Menu Item'}
-          </h2>
-          <button onClick={onClose} className="text-text-3 hover:text-text transition text-xl leading-none">
-            ×
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
+      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-lg my-4">
+        <div className="px-5 py-4 border-b border-border flex items-start justify-between">
+          <div>
+            <p className="eyebrow">Menu</p>
+            <h2 className="font-display text-lg font-semibold tracking-tight text-text">
+              {isEdit ? 'Edit Menu Item' : 'Add Menu Item'}
+            </h2>
+          </div>
+          <button onClick={onClose} aria-label="Close" className="text-text-3 hover:text-text transition rounded-lg p-1 hover:bg-bg-2">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -762,7 +777,7 @@ function MenuItemDialog({
               {...register('description')}
               rows={2}
               placeholder="Short description…"
-              className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-border-2 bg-surface text-sm text-text placeholder:text-text-3 hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand resize-none transition-all"
             />
           </div>
 
@@ -772,7 +787,7 @@ function MenuItemDialog({
             <select
               value={selectedCanteenId ?? ''}
               onChange={handleCanteenChange}
-              className="w-full h-9 px-3 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand"
+              className="w-full h-9 px-3 rounded-lg border border-border-2 bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all"
             >
               <option value="">Select canteen…</option>
               {canteens.map((c) => (
@@ -791,7 +806,7 @@ function MenuItemDialog({
             <label className="block text-sm font-medium text-text mb-1.5">Category</label>
             <select
               {...register('category_id')}
-              className="w-full h-9 px-3 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand"
+              className="w-full h-9 px-3 rounded-lg border border-border-2 bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all"
               disabled={!selectedCanteenId}
             >
               <option value="">
@@ -845,7 +860,7 @@ function MenuItemDialog({
 
           {/* Photo Upload */}
           <div className="border border-border rounded-xl p-4 space-y-3">
-            <p className="text-sm font-semibold text-text">Photo</p>
+            <p className="eyebrow">Photo</p>
 
             {imageUrl && (
               <div className="flex items-center gap-3">
@@ -909,7 +924,7 @@ function MenuItemDialog({
           <div className="border border-border rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-text">Stock Management</p>
+                <p className="eyebrow">Stock Management</p>
                 <p className="text-xs text-text-3 mt-0.5">
                   Track units — item auto-disables when stock hits 0
                 </p>
@@ -1005,14 +1020,17 @@ function CategoryDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 overflow-y-auto">
-      <div className="bg-surface rounded-xl border border-border shadow-xl w-full max-w-md my-4">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-base font-semibold text-text">
-            {isEdit ? 'Edit Category' : 'Add Category'}
-          </h2>
-          <button onClick={onClose} className="text-text-3 hover:text-text transition text-xl leading-none">
-            ×
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
+      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-md my-4">
+        <div className="px-5 py-4 border-b border-border flex items-start justify-between">
+          <div>
+            <p className="eyebrow">Menu</p>
+            <h2 className="font-display text-lg font-semibold tracking-tight text-text">
+              {isEdit ? 'Edit Category' : 'Add Category'}
+            </h2>
+          </div>
+          <button onClick={onClose} aria-label="Close" className="text-text-3 hover:text-text transition rounded-lg p-1 hover:bg-bg-2">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -1022,7 +1040,7 @@ function CategoryDialog({
             <label className="block text-sm font-medium text-text mb-1.5">Canteen *</label>
             <select
               {...register('canteen_id')}
-              className="w-full h-9 px-3 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand"
+              className="w-full h-9 px-3 rounded-lg border border-border-2 bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all"
             >
               <option value="">Select canteen…</option>
               {canteens.map((c) => (
@@ -1063,7 +1081,7 @@ function CategoryDialog({
               {...register('description')}
               rows={2}
               placeholder="Short description…"
-              className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm text-text placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-border-2 bg-surface text-sm text-text placeholder:text-text-3 hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand resize-none transition-all"
             />
           </div>
 

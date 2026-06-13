@@ -71,17 +71,22 @@ function AdminLoginInner() {
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-6">
       <div className="w-full max-w-md">
-        {/* Logo & Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-brand mb-4">
-            <ShieldCheck className="w-7 h-7 text-white" />
+        {/* Wordmark & editorial header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2.5 mb-6">
+            <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand shadow-warm">
+              <ShieldCheck className="w-5 h-5 text-white" />
+            </div>
+            <span className="font-display text-2xl font-semibold text-text tracking-tight">CampusBite</span>
           </div>
-          <h1 className="text-2xl font-bold text-text">Admin Portal</h1>
-          <p className="text-text-2 mt-1 text-sm">CampusBite Management Console</p>
+          <p className="eyebrow mb-2">Management Console</p>
+          <h1 className="font-display text-3xl font-semibold text-text tracking-tight">Admin Portal</h1>
+          <div className="mt-3 h-1 w-12 rounded-full bg-amber" />
+          <p className="text-text-2 mt-4 text-sm">Sign in to manage institutes, billing and operations.</p>
         </div>
 
         {/* Card */}
-        <div className="bg-surface rounded-xl shadow-md border border-border p-8">
+        <div className="bg-surface rounded-2xl shadow-md border border-border p-8">
           {serverError && (
             <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
               {serverError}
@@ -158,7 +163,7 @@ function AdminLoginInner() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={isGoogleLoading}
-            className="w-full h-10 bg-white border border-border text-text text-sm font-medium rounded-lg hover:bg-bg transition disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full h-10 bg-surface border border-border-2 text-text text-sm font-medium rounded-lg hover:bg-bg-2 transition disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {isGoogleLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />

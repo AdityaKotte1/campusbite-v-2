@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingBag, UtensilsCrossed, Users, UserCheck,
   BarChart3, Monitor, Settings, ClipboardList, LogOut, ChevronLeft,
-  Building2, Store, CreditCard,
+  Building2, Store, CreditCard, LifeBuoy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -23,6 +23,7 @@ const ALL_NAV = [
   { href: '/staff',      label: 'Staff',      Icon: UserCheck,       roles: ['super_admin', 'canteen_admin'] },
   { href: '/analytics',  label: 'Analytics',  Icon: BarChart3,       roles: ['super_admin', 'canteen_admin'] },
   { href: '/kiosks',     label: 'Kiosks',     Icon: Monitor,         roles: ['super_admin', 'canteen_admin', 'staff'] },
+  { href: '/support',    label: 'Support',    Icon: LifeBuoy,        roles: ['super_admin', 'canteen_admin', 'staff'] },
   { href: '/billing',    label: 'Billing',    Icon: CreditCard,      roles: ['canteen_admin'] },
   { href: '/settings',   label: 'Settings',   Icon: Settings,        roles: ['super_admin', 'canteen_admin'] },
   { href: '/audit-logs', label: 'Audit Logs', Icon: ClipboardList,   roles: ['super_admin'] },
@@ -46,11 +47,13 @@ export function Sidebar({ className }: { className?: string }) {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shrink-0 shadow-warm">
           <span className="text-white text-xs font-bold">CB</span>
         </div>
         {!sidebarCollapsed && (
-          <span className="text-sm font-bold text-text truncate">CampusBite</span>
+          <span className="font-display text-lg font-semibold text-text truncate tracking-tight">
+            CampusBite
+          </span>
         )}
         <button
           onClick={toggleCollapsed}
@@ -96,12 +99,15 @@ export function Sidebar({ className }: { className?: string }) {
                   href={href}
                   title={sidebarCollapsed ? label : undefined}
                   className={cn(
-                    'flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors',
+                    'relative flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm transition-all duration-150',
                     isActive
-                      ? 'bg-brand-pale text-brand'
-                      : 'text-text-2 hover:bg-bg hover:text-text'
+                      ? 'bg-brand-pale text-brand font-semibold'
+                      : 'text-text-2 font-medium hover:bg-bg-2 hover:text-text'
                   )}
                 >
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-brand" />
+                  )}
                   <Icon className={cn('shrink-0', isActive && 'text-brand')} size={18} />
                   {!sidebarCollapsed && <span className="truncate">{label}</span>}
                 </Link>

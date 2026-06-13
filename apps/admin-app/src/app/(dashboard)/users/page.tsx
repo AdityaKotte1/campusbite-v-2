@@ -24,7 +24,7 @@ function buildColumns(onToggleActive: (user: User) => void, institutesMap: Recor
       header: 'User',
       cell: ({ row }) => (
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-brand-pale text-brand flex items-center justify-center text-xs font-semibold shrink-0">
+          <div className="w-8 h-8 rounded-full bg-brand-pale text-brand flex items-center justify-center font-display text-xs font-semibold shrink-0">
             {initials(row.original.full_name)}
           </div>
           <div>
@@ -38,7 +38,7 @@ function buildColumns(onToggleActive: (user: User) => void, institutesMap: Recor
       accessorKey: 'role',
       header: 'Role',
       cell: ({ row }) => (
-        <Badge variant={row.original.role === 'super_admin' ? 'brand' : 'default'}>
+        <Badge variant={row.original.role === 'super_admin' ? 'purple' : 'default'}>
           {ROLE_LABELS[row.original.role] ?? row.original.role}
         </Badge>
       ),
@@ -72,7 +72,8 @@ function buildColumns(onToggleActive: (user: User) => void, institutesMap: Recor
       accessorKey: 'is_active',
       header: 'Status',
       cell: ({ row }) => (
-        <Badge variant={row.original.is_active ? 'success' : 'danger'}>
+        <Badge variant={row.original.is_active ? 'success' : 'danger'} className="gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full ${row.original.is_active ? 'bg-green' : 'bg-red-500'}`} />
           {row.original.is_active ? 'Active' : 'Suspended'}
         </Badge>
       ),
@@ -155,7 +156,8 @@ export default function UsersPage() {
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="h-9 px-3 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand"
+          aria-label="Filter by role"
+          className="h-9 px-3 rounded-lg border border-border-2 bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all"
         >
           {roleOptions.map((r) => (
             <option key={r} value={r}>

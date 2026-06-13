@@ -57,12 +57,12 @@ export default function KioskRegisterPage() {
 
   return (
     <div className="max-w-lg space-y-5">
-      <h2 className="text-lg font-bold text-text">Register Kiosk</h2>
+      <h2 className="font-display text-xl font-semibold text-text tracking-tight">Register Kiosk</h2>
 
       {step === 'form' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Kiosk Details</CardTitle>
+            <CardTitle className="font-display tracking-tight">Kiosk Details</CardTitle>
           </CardHeader>
           <CardContent>
             {serverError && (
@@ -100,12 +100,12 @@ export default function KioskRegisterPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Kiosk Registered Successfully</CardTitle>
+            <CardTitle className="font-display tracking-tight">Kiosk Registered Successfully</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
-              <p className="text-sm text-yellow-700">
+            <div className="flex gap-3 p-3 bg-amber-pale border border-amber/25 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-amber shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-dark">
                 <strong>Save this API key immediately.</strong> For security, it will never be shown again after you leave this page.
               </p>
             </div>

@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import {
   Plus, ChevronDown, ChevronRight, Pencil, PowerOff, Store,
-  UserCheck, Loader2, Building2, Upload, ImageIcon,
+  UserCheck, Loader2, Building2, Upload, ImageIcon, X,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -95,10 +95,13 @@ export default function InstitutesPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-text-3">
-          {institutes.length} institute{institutes.length !== 1 ? 's' : ''} total
-        </p>
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="eyebrow">Network</p>
+          <p className="font-display text-sm font-semibold tracking-tight text-text-2">
+            <span className="tabular-nums">{institutes.length}</span> institute{institutes.length !== 1 ? 's' : ''} total
+          </p>
+        </div>
         <Button onClick={() => setShowAddInstitute(true)}>
           <Plus className="w-4 h-4" /> Add Institute
         </Button>
@@ -133,9 +136,14 @@ export default function InstitutesPage() {
               : institutes.length === 0
               ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-text-3">
-                    <Building2 className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                    <p>No institutes yet. Add one to get started.</p>
+                  <td colSpan={8} className="px-4 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-14 h-14 rounded-full bg-amber-pale flex items-center justify-center">
+                        <Building2 className="w-6 h-6 text-amber-dark" />
+                      </div>
+                      <p className="font-display text-lg font-semibold tracking-tight text-text">No institutes yet</p>
+                      <p className="text-sm text-text-3">Add one to get started.</p>
+                    </div>
                   </td>
                 </tr>
               )
@@ -234,7 +242,7 @@ function InstituteRows({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={institute.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain border border-border" />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-brand-pale text-brand flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-brand-pale text-brand flex items-center justify-center font-display text-xs font-semibold shrink-0">
                 {initials(institute.name)}
               </div>
             )}
@@ -251,7 +259,7 @@ function InstituteRows({
         <td className="px-4 py-3">
           <span className="inline-flex items-center gap-1 text-text-2">
             <Store className="w-3.5 h-3.5 text-text-3" />
-            {institute.canteen_count}
+            <span className="tabular-nums">{institute.canteen_count}</span>
           </span>
         </td>
 
@@ -267,7 +275,8 @@ function InstituteRows({
         </td>
 
         <td className="px-4 py-3">
-          <Badge variant={institute.is_active ? 'success' : 'danger'}>
+          <Badge variant={institute.is_active ? 'success' : 'danger'} className="gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${institute.is_active ? 'bg-green' : 'bg-text-3'}`} />
             {institute.is_active ? 'Active' : 'Inactive'}
           </Badge>
         </td>
@@ -304,7 +313,7 @@ function InstituteRows({
           <td colSpan={8} className="px-0 py-0 bg-bg-2 border-b border-border">
             <div className="pl-12 pr-4 py-3">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-text-3 uppercase tracking-wide">
+                <p className="eyebrow">
                   Canteens under {institute.name}
                 </p>
                 <Button size="sm" variant="outline" onClick={onAddCanteen}>
@@ -325,14 +334,15 @@ function InstituteRows({
                       key={c.id}
                       className="flex items-center gap-3 bg-surface rounded-lg border border-border px-3 py-2"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-brand-pale text-brand flex items-center justify-center text-xs font-bold shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-brand-pale text-brand flex items-center justify-center font-display text-xs font-semibold shrink-0">
                         {initials(c.name)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-text truncate">{c.name}</p>
                         <p className="text-xs text-text-3 truncate">{c.location ?? c.building ?? '—'}</p>
                       </div>
-                      <Badge variant={c.is_active ? 'success' : 'danger'} className="shrink-0">
+                      <Badge variant={c.is_active ? 'success' : 'danger'} className="shrink-0 gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${c.is_active ? 'bg-green' : 'bg-text-3'}`} />
                         {c.is_active ? 'On' : 'Off'}
                       </Badge>
                     </div>
@@ -550,7 +560,7 @@ function AddCanteenDialog({
 
         {/* Canteen Photo */}
         <div className="border border-border rounded-xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-text">Canteen Photo</p>
+          <p className="eyebrow">Canteen Photo</p>
 
           {imageUrl && (
             <div className="flex items-center gap-3">
@@ -703,15 +713,19 @@ function DialogShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-surface rounded-xl border border-border shadow-xl w-full max-w-lg">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-base font-semibold text-text">{title}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
+      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-lg my-4">
+        <div className="px-5 py-4 border-b border-border flex items-start justify-between">
+          <div>
+            <p className="eyebrow">Network</p>
+            <h2 className="font-display text-lg font-semibold tracking-tight text-text">{title}</h2>
+          </div>
           <button
             onClick={onClose}
-            className="text-text-3 hover:text-text text-xl leading-none"
+            className="text-text-3 hover:text-text transition rounded-lg p-1 hover:bg-bg-2"
+            aria-label="Close"
           >
-            ×
+            <X className="w-4 h-4" />
           </button>
         </div>
         {children}
