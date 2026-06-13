@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, MapPin, CheckCircle2, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, MapPin, CheckCircle2, ChevronRight, Loader2, School } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Institute {
   id: string;
@@ -75,26 +76,31 @@ export default function OnboardingPage() {
   }, [selected, router]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-bg">
       {/* Header */}
-      <div className="bg-[#E8390E] px-6 pt-14 pb-8 text-white">
-        <div className="text-3xl mb-1">👋</div>
-        <h1 className="text-2xl font-bold leading-tight">Welcome to CampusBite</h1>
-        <p className="mt-1 text-white/80 text-sm">
-          Select your college to see canteens near you
+      <div className="bg-brand px-6 pt-14 pb-9 text-white shadow-warm">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70 mb-2">
+          Welcome to MunchAdda
+        </p>
+        <h1 className="font-display text-3xl font-semibold tracking-tight leading-tight">
+          Pick your campus
+        </h1>
+        <p className="mt-2 text-white/80 text-sm">
+          Select your college to see canteens near you.
         </p>
       </div>
 
       {/* Search */}
       <div className="px-4 -mt-5 z-10 relative">
-        <div className="bg-white rounded-2xl shadow-md flex items-center gap-3 px-4 py-3">
-          <Search className="w-5 h-5 text-[#999]" />
+        <div className="bg-surface rounded-2xl shadow-md border border-border flex items-center gap-3 px-4 py-3">
+          <Search className="w-5 h-5 text-text-3" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by college name or city..."
-            className="flex-1 text-sm bg-transparent outline-none text-[#111] placeholder:text-[#999]"
+            aria-label="Search colleges"
+            className="flex-1 text-sm bg-transparent outline-none text-text placeholder:text-text-3"
             autoFocus
           />
         </div>
@@ -104,15 +110,17 @@ export default function OnboardingPage() {
       <div className="flex-1 px-4 mt-4 pb-36 overflow-y-auto">
         {loading && (
           <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-[#E8390E]" />
+            <Loader2 className="w-8 h-8 animate-spin text-brand" />
           </div>
         )}
 
         {!loading && filtered.length === 0 && (
           <div className="text-center py-16">
-            <div className="text-5xl mb-3">🏫</div>
-            <p className="text-[#555] font-medium">No colleges found</p>
-            <p className="text-[#999] text-sm mt-1">
+            <div className="w-14 h-14 rounded-2xl bg-surface-2 border border-border flex items-center justify-center mx-auto mb-4">
+              <School className="w-6 h-6 text-text-3" />
+            </div>
+            <p className="font-display text-lg font-semibold text-text">No colleges found</p>
+            <p className="text-text-3 text-sm mt-1">
               {search ? `No results for "${search}"` : 'No colleges available yet'}
             </p>
           </div>
@@ -126,16 +134,16 @@ export default function OnboardingPage() {
                 <button
                   key={institute.id}
                   onClick={() => setSelected(isSelected ? null : institute)}
-                  className={`w-full text-left rounded-2xl border-2 p-4 transition-all duration-150 flex items-center gap-4 ${
+                  className={`w-full text-left rounded-2xl border p-4 transition-all duration-150 flex items-center gap-4 cursor-pointer ${
                     isSelected
-                      ? 'border-[#E8390E] bg-[#FFF0EC]'
-                      : 'border-[#EBEBEB] bg-white hover:border-[#E8390E]/40'
+                      ? 'border-brand bg-brand-pale shadow-sm'
+                      : 'border-border bg-surface hover:border-brand/40 hover:shadow-sm'
                   }`}
                 >
                   {/* Logo or initials */}
                   <div
                     className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden ${
-                      isSelected ? 'bg-[#E8390E]' : 'bg-[#F5F5F5]'
+                      isSelected ? 'bg-brand' : 'bg-bg-2'
                     }`}
                   >
                     {institute.logo_url ? (
@@ -146,8 +154,8 @@ export default function OnboardingPage() {
                       />
                     ) : (
                       <span
-                        className={`text-lg font-bold ${
-                          isSelected ? 'text-white' : 'text-[#555]'
+                        className={`font-display text-lg font-semibold ${
+                          isSelected ? 'text-white' : 'text-text-2'
                         }`}
                       >
                         {institute.name.charAt(0)}
@@ -159,23 +167,23 @@ export default function OnboardingPage() {
                   <div className="flex-1 min-w-0">
                     <p
                       className={`font-semibold text-sm leading-tight ${
-                        isSelected ? 'text-[#E8390E]' : 'text-[#111]'
+                        isSelected ? 'text-brand' : 'text-text'
                       }`}
                     >
                       {institute.name}
                     </p>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3 text-[#999] flex-shrink-0" />
-                      <p className="text-xs text-[#999] truncate">
+                      <MapPin className="w-3 h-3 text-text-3 flex-shrink-0" />
+                      <p className="text-xs text-text-3 truncate">
                         {institute.city}, {institute.state}
                       </p>
                     </div>
-                    <p className="text-xs text-[#bbb] mt-0.5">{institute.code}</p>
+                    <p className="text-xs text-text-3 mt-0.5">{institute.code}</p>
                   </div>
 
                   {/* Check */}
                   {isSelected && (
-                    <CheckCircle2 className="w-5 h-5 text-[#E8390E] flex-shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-brand flex-shrink-0" />
                   )}
                 </button>
               );
@@ -190,21 +198,22 @@ export default function OnboardingPage() {
 
       {/* Bottom CTA — slides up when institute selected */}
       <div
-        className={`fixed bottom-0 left-0 right-0 bg-white border-t border-[#EBEBEB] px-4 py-4 transition-transform duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 bg-surface border-t border-border px-4 py-4 transition-transform duration-300 ${
           selected ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
       >
         {selected && (
           <div className="max-w-sm mx-auto">
-            <p className="text-xs text-[#999] mb-1 text-center">You selected</p>
-            <p className="text-sm font-semibold text-[#111] text-center mb-3 truncate">
+            <p className="eyebrow text-text-3 mb-1 text-center">You selected</p>
+            <p className="text-sm font-semibold text-text text-center mb-3 truncate">
               {selected.name} — {selected.city}
             </p>
-            <button
+            <Button
               onClick={handleContinue}
               disabled={saving}
-              className="w-full bg-[#E8390E] text-white rounded-2xl py-4 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+              size="lg"
+              className="w-full cursor-pointer"
             >
               {saving ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -214,7 +223,7 @@ export default function OnboardingPage() {
                   <ChevronRight className="w-5 h-5" />
                 </>
               )}
-            </button>
+            </Button>
           </div>
         )}
       </div>

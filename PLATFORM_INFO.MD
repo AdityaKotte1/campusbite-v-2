@@ -1,7 +1,7 @@
-# CampusBite Master Build Plan - From Scratch
+# MunchAdda Master Build Plan - From Scratch
 
 ## Document Overview
-This is the complete blueprint for building CampusBite from scratch. This document provides everything needed to build a production-ready system with best-in-class security, performance, and user experience.
+This is the complete blueprint for building MunchAdda from scratch. This document provides everything needed to build a production-ready system with best-in-class security, performance, and user experience.
 
 ---
 
@@ -25,7 +25,7 @@ This is the complete blueprint for building CampusBite from scratch. This docume
 ## System Overview
 
 ### Vision
-CampusBite is a campus food ordering platform that connects students with canteens, providing a seamless ordering experience with real-time tracking, secure payments, and efficient management tools.
+MunchAdda is a campus food ordering platform that connects students with canteens, providing a seamless ordering experience with real-time tracking, secure payments, and efficient management tools.
 
 ### Core Value Proposition
 - **For Students**: Fast, easy food ordering with real-time tracking
@@ -47,7 +47,7 @@ CampusBite is a campus food ordering platform that connects students with cantee
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    CampusBite System                         │
+│                    MunchAdda System                         │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌─────────────────────────────────────────────────────┐    │
@@ -1807,7 +1807,7 @@ export const useCartStore = create(
       removeItem: (id) => { /* ... */ },
     }),
     {
-      name: 'campusbite-cart',
+      name: 'munchadda-cart',
       storage: createJSONStorage(() => localStorage),
     }
   )
@@ -2073,7 +2073,7 @@ const nextConfig = {
           {
             key: 'Access-Control-Allow-Origin',
             value: process.env.NODE_ENV === 'production' 
-              ? 'https://campusbite.com' 
+              ? 'https://munchadda.com' 
               : '*'
           },
           {
@@ -2960,7 +2960,7 @@ import { test, expect } from '@playwright/test';
 
 test('complete order flow', async ({ page }) => {
   // Navigate to app
-  await page.goto('https://campusbite.com');
+  await page.goto('https://munchadda.com');
   
   // Login
   await page.click('text=Login');
@@ -3082,7 +3082,7 @@ test('complete order flow', async ({ page }) => {
 
 ## Conclusion
 
-This master plan provides a complete blueprint for building CampusBite from scratch as a production-ready system. By following this plan, you will create a system that is:
+This master plan provides a complete blueprint for building MunchAdda from scratch as a production-ready system. By following this plan, you will create a system that is:
 
 - **Secure**: Multi-layer security with zero-trust architecture
 - **Performant**: Optimized for speed with <2s load time
@@ -3095,9 +3095,9 @@ The system is designed to be modular, allowing for incremental implementation wh
 
 
 
-# CampusBite — Kiosk Integration: God Mode Master Plan
+# MunchAdda — Kiosk Integration: God Mode Master Plan
 
-**Document Type:** Extension to CampusBite Master Build Plan v1.0  
+**Document Type:** Extension to MunchAdda Master Build Plan v1.0  
 **Version:** 2.0 — Kiosk Module  
 **Scope:** Raspberry Pi Self-Service Kiosk + QR System Overhaul + Auth Completion  
 **Date:** June 2025
@@ -3184,7 +3184,7 @@ The 12:30–1:00 PM window is the stress test. Any system element that has N+1 l
 
 Understanding what students will actively try:
 
-| Fraud Pattern | How it Works | CampusBite Counter-Measure |
+| Fraud Pattern | How it Works | MunchAdda Counter-Measure |
 |---|---|---|
 | QR sharing | Student A pays, sends QR screenshot to Student B to collect | Single-use atomic DB update — first scan wins |
 | Repeat collection | Student scans QR, gets food, goes back and scans again | Token marked `used` immediately, second scan returns "Already Collected" |
@@ -3211,7 +3211,7 @@ Understanding what students will actively try:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                         CampusBite v2 — Full System                      │
+│                         MunchAdda v2 — Full System                      │
 ├──────────────────────────────────────────────────────────────────────────┤
 │                                                                            │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────────────┐ │
@@ -3414,7 +3414,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
       <div className="bg-white rounded-2xl shadow-md p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-[#111111] mb-6 text-center">Sign in to CampusBite</h1>
+        <h1 className="text-2xl font-bold text-[#111111] mb-6 text-center">Sign in to MunchAdda</h1>
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -3734,10 +3734,10 @@ export async function POST(
 The QR code encodes a simple URL-safe string:
 
 ```
-campusbite://qr/{token_uuid}
+munchadda://qr/{token_uuid}
 
 Example:
-campusbite://qr/550e8400-e29b-41d4-a716-446655440000
+munchadda://qr/550e8400-e29b-41d4-a716-446655440000
 ```
 
 This format:
@@ -3766,7 +3766,7 @@ export function QRDisplay({ token, expiresAt, orderNumber, status }: QRDisplayPr
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [expired, setExpired] = useState(false);
 
-  const qrContent = `campusbite://qr/${token}`;
+  const qrContent = `munchadda://qr/${token}`;
 
   // Countdown timer
   useEffect(() => {
@@ -4360,7 +4360,7 @@ Student app calls this to display QR. Returns token data (not the raw token if a
 
 ```typescript
 // GET /api/v1/orders/:orderId/qr
-// Returns: { token, expires_at, status, qr_content: "campusbite://qr/{token}" }
+// Returns: { token, expires_at, status, qr_content: "munchadda://qr/{token}" }
 // Student auth required — order must belong to them
 ```
 
@@ -4405,7 +4405,7 @@ Student app calls this to display QR. Returns token data (not the raw token if a
 
 # In Imager "Advanced Options" before flashing:
 # ✓ Enable SSH
-# ✓ Set username/password (campusbite / [strong password])
+# ✓ Set username/password (munchadda / [strong password])
 # ✓ Configure WiFi (canteen WiFi credentials)
 # ✓ Set locale: en_IN, timezone: Asia/Kolkata
 
@@ -4455,7 +4455,7 @@ python3 -c "
 from escpos.printer import Usb
 # Get vendor/product ID with: lsusb
 p = Usb(0x0483, 0x5743)  # Xprinter IDs; check yours with lsusb
-p.text('CampusBite Test\n')
+p.text('MunchAdda Test\n')
 p.cut()
 "
 ```
@@ -4467,7 +4467,7 @@ p.cut()
 ### 8.1 File Structure
 
 ```
-/opt/campusbite-kiosk/
+/opt/munchadda-kiosk/
 ├── main.py
 ├── app.py
 ├── scanner.py
@@ -4494,17 +4494,17 @@ p.cut()
 │   └── offline.sqlite     ← offline queue database
 ├── requirements.txt
 └── systemd/
-    └── campusbite-kiosk.service
+    └── munchadda-kiosk.service
 ```
 
 ### 8.2 `config/kiosk.yaml`
 
 ```yaml
-# /opt/campusbite-kiosk/config/kiosk.yaml
+# /opt/munchadda-kiosk/config/kiosk.yaml
 # Permissions: chmod 600 (root read only)
 
 server:
-  base_url: "https://campusbite.com"
+  base_url: "https://munchadda.com"
   timeout_seconds: 10
   retry_attempts: 3
   retry_delay_seconds: 1
@@ -4559,7 +4559,7 @@ schedule==1.2.1    # periodic tasks
 
 ```python
 #!/usr/bin/env python3
-"""CampusBite Kiosk — Entry Point"""
+"""MunchAdda Kiosk — Entry Point"""
 
 import logging
 import sys
@@ -4584,7 +4584,7 @@ from app import KioskApp
 
 if __name__ == '__main__':
     logging.info("=" * 50)
-    logging.info("CampusBite Kiosk Starting Up")
+    logging.info("MunchAdda Kiosk Starting Up")
     logging.info("=" * 50)
     app = KioskApp(BASE_DIR)
     app.run()
@@ -4605,13 +4605,13 @@ from scanner import BarcodeScanner
 from printer import ThermalPrinter
 from display import KioskDisplay
 from audio import AudioManager
-from api_client import CampusBiteAPI
+from api_client import MunchAddaAPI
 from offline.queue import OfflineQueue
 from offline.sync import SyncManager
 
 logger = logging.getLogger(__name__)
 
-QR_PREFIX = "campusbite://qr/"
+QR_PREFIX = "munchadda://qr/"
 
 
 class KioskApp:
@@ -4624,7 +4624,7 @@ class KioskApp:
             self.config = yaml.safe_load(f)
 
         # Initialize components
-        self.api    = CampusBiteAPI(self.config)
+        self.api    = MunchAddaAPI(self.config)
         self.queue  = OfflineQueue(base_dir / 'db' / 'offline.sqlite')
         self.syncer = SyncManager(self.api, self.queue)
         self.audio  = AudioManager(base_dir / 'assets' / 'sounds', self.config['audio'])
@@ -4671,7 +4671,7 @@ class KioskApp:
         # Extract token from QR content
         if not raw_data.startswith(QR_PREFIX):
             logger.warning(f"Invalid QR format: {raw_data}")
-            self.display.show_error("INVALID_QR", "Not a CampusBite QR")
+            self.display.show_error("INVALID_QR", "Not a MunchAdda QR")
             self.audio.play('error')
             time.sleep(2)
             self.display.show_idle()
@@ -4987,7 +4987,7 @@ class ThermalPrinter:
 
             # ─── HEADER ───────────────────────────────────
             p.set(align='center', bold=True, double_height=False, double_width=False)
-            p.text('CAMPUSBITE\n')
+            p.text('MUNCHADDA\n')
             p.set(bold=False, align='center')
             p.text(order_data.get('canteen_name', 'Canteen') + '\n')
             if order_data.get('offline_scan'):
@@ -5122,7 +5122,7 @@ ERROR_MESSAGES = {
     'EXPIRED':              ('⏰', 'QR Expired',                  'Contact staff with your Order ID.'),
     'INVALID_TOKEN':        ('✗',  'Invalid QR',                 'This does not look right.'),
     'REVOKED':              ('✗',  'Order Cancelled',            'This order was cancelled.'),
-    'INVALID_QR':           ('?',  'Wrong QR Format',            'Scan your CampusBite order QR.'),
+    'INVALID_QR':           ('?',  'Wrong QR Format',            'Scan your MunchAdda order QR.'),
     'NETWORK_ERROR':        ('📶', 'No Connection',               'Try again or see staff.'),
     'OFFLINE_UNAVAILABLE':  ('📶', 'Offline — QR Not Cached',    'Show staff your Order ID.'),
     'PRINT_ERROR':          ('🖨', 'Printer Issue',              'Show your phone screen to staff.'),
@@ -5141,7 +5141,7 @@ class KioskDisplay:
 
     def _setup(self):
         self.root = tk.Tk()
-        self.root.title("CampusBite Kiosk")
+        self.root.title("MunchAdda Kiosk")
         self.root.configure(bg=COLOURS['idle_bg'])
         self.root.geometry(f"{self.W}x{self.H}")
         if self.is_fullscreen:
@@ -5271,7 +5271,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-class CampusBiteAPI:
+class MunchAddaAPI:
     def __init__(self, config: dict):
         self.base_url    = config['server']['base_url']
         self.kiosk_id    = config['kiosk']['id']
@@ -5483,11 +5483,11 @@ class OfflineQueue:
         self.clean_expired_cache()
 ```
 
-### 8.11 `systemd/campusbite-kiosk.service`
+### 8.11 `systemd/munchadda-kiosk.service`
 
 ```ini
 [Unit]
-Description=CampusBite Kiosk Application
+Description=MunchAdda Kiosk Application
 After=network.target graphical.target
 Wants=network-online.target
 
@@ -5495,15 +5495,15 @@ Wants=network-online.target
 Type=simple
 User=kiosk
 Group=kiosk
-WorkingDirectory=/opt/campusbite-kiosk
+WorkingDirectory=/opt/munchadda-kiosk
 Environment="DISPLAY=:0"
 Environment="XAUTHORITY=/home/kiosk/.Xauthority"
 ExecStartPre=/bin/sleep 5
-ExecStart=/usr/bin/python3 /opt/campusbite-kiosk/main.py
+ExecStart=/usr/bin/python3 /opt/munchadda-kiosk/main.py
 Restart=always
 RestartSec=10
-StandardOutput=append:/opt/campusbite-kiosk/logs/kiosk.log
-StandardError=append:/opt/campusbite-kiosk/logs/kiosk.log
+StandardOutput=append:/opt/munchadda-kiosk/logs/kiosk.log
+StandardError=append:/opt/munchadda-kiosk/logs/kiosk.log
 
 # Security hardening
 NoNewPrivileges=true
@@ -5515,14 +5515,14 @@ WantedBy=graphical.target
 
 ```bash
 # Install the service:
-sudo cp systemd/campusbite-kiosk.service /etc/systemd/system/
+sudo cp systemd/munchadda-kiosk.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable campusbite-kiosk.service
-sudo systemctl start campusbite-kiosk.service
+sudo systemctl enable munchadda-kiosk.service
+sudo systemctl start munchadda-kiosk.service
 
 # Check status:
-sudo systemctl status campusbite-kiosk.service
-journalctl -u campusbite-kiosk.service -f
+sudo systemctl status munchadda-kiosk.service
+journalctl -u munchadda-kiosk.service -f
 ```
 
 ---
@@ -5534,7 +5534,7 @@ journalctl -u campusbite-kiosk.service -f
 ```
 ┌────────────────────────────────┐  (32 chars wide)
 │                                │
-│          CAMPUSBITE            │  ← centered, bold
+│          MUNCHADDA            │  ← centered, bold
 │       Engineering Canteen      │  ← canteen name
 │================================│
 │                                │
@@ -5795,7 +5795,7 @@ UPDATE qr_tokens SET status='used' WHERE token='abc' AND status='active'
 
 ```
 On Kiosk:
-  /opt/campusbite-kiosk/config/kiosk.yaml  (chmod 600, owner: root)
+  /opt/munchadda-kiosk/config/kiosk.yaml  (chmod 600, owner: root)
   api_key stored as plaintext (encrypted by filesystem + restricted access)
   
 On Server (DB):
@@ -5842,7 +5842,7 @@ Layer 3 — 4G USB Dongle (emergency failover)
 ```
 
 ```bash
-# /etc/NetworkManager/conf.d/campusbite.conf
+# /etc/NetworkManager/conf.d/munchadda.conf
 [connection]
 # Auto-connect all interfaces with metric priorities
 # See: nmcli con mod "Wired" ipv4.route-metric 100
@@ -5851,10 +5851,10 @@ Layer 3 — 4G USB Dongle (emergency failover)
 ### 14.2 Firewall Rules on Kiosk
 
 ```bash
-# Allow only outbound HTTPS to CampusBite server
+# Allow only outbound HTTPS to MunchAdda server
 sudo ufw default deny outgoing
 sudo ufw default deny incoming
-sudo ufw allow out to campusbite.com port 443 proto tcp
+sudo ufw allow out to munchadda.com port 443 proto tcp
 sudo ufw allow out to any port 53 proto udp    # DNS
 sudo ufw allow out to any port 123 proto udp   # NTP
 sudo ufw allow in from 192.168.1.0/24 port 22 # SSH from local network only
@@ -5871,21 +5871,21 @@ sudo ufw enable
 # ─── STEP 1: Flash OS ────────────────────────────────────────────
 # Use Raspberry Pi Imager with:
 # OS: Raspberry Pi OS Lite (64-bit)
-# Hostname: campusbite-kiosk-01
+# Hostname: munchadda-kiosk-01
 # SSH: enabled
 # WiFi: configured
 # Timezone: Asia/Kolkata
 
 # ─── STEP 2: First boot setup ────────────────────────────────────
-ssh campusbite@campusbite-kiosk-01.local
+ssh munchadda@munchadda-kiosk-01.local
 sudo apt-get update && sudo apt-get upgrade -y
 sudo apt-get install -y python3-pip python3-venv python3-tk \
   git cups libcups2-dev alsa-utils espeak-ng ufw
 
 # ─── STEP 3: Clone and install kiosk app ─────────────────────────
-sudo git clone https://github.com/campusbite/kiosk-app.git /opt/campusbite-kiosk
-sudo chown -R kiosk:kiosk /opt/campusbite-kiosk
-cd /opt/campusbite-kiosk
+sudo git clone https://github.com/munchadda/kiosk-app.git /opt/munchadda-kiosk
+sudo chown -R kiosk:kiosk /opt/munchadda-kiosk
+cd /opt/munchadda-kiosk
 pip3 install -r requirements.txt --break-system-packages
 
 # ─── STEP 4: Register kiosk in admin panel ────────────────────────
@@ -5894,22 +5894,22 @@ pip3 install -r requirements.txt --break-system-packages
 # Copy the displayed API key (shown only once!)
 
 # ─── STEP 5: Configure kiosk ──────────────────────────────────────
-sudo cp /opt/campusbite-kiosk/config/kiosk.yaml.example \
-        /opt/campusbite-kiosk/config/kiosk.yaml
-sudo nano /opt/campusbite-kiosk/config/kiosk.yaml
+sudo cp /opt/munchadda-kiosk/config/kiosk.yaml.example \
+        /opt/munchadda-kiosk/config/kiosk.yaml
+sudo nano /opt/munchadda-kiosk/config/kiosk.yaml
 # Fill in: kiosk.id, kiosk.api_key, kiosk.canteen_id
-sudo chmod 600 /opt/campusbite-kiosk/config/kiosk.yaml
-sudo chown root:root /opt/campusbite-kiosk/config/kiosk.yaml
+sudo chmod 600 /opt/munchadda-kiosk/config/kiosk.yaml
+sudo chown root:root /opt/munchadda-kiosk/config/kiosk.yaml
 
 # ─── STEP 6: Configure printer ────────────────────────────────────
 lsusb  # Find vendor:product IDs for your printer
 # Update printer.vendor_id and printer.product_id in kiosk.yaml
 
 # ─── STEP 7: Install and enable service ───────────────────────────
-sudo cp /opt/campusbite-kiosk/systemd/campusbite-kiosk.service /etc/systemd/system/
+sudo cp /opt/munchadda-kiosk/systemd/munchadda-kiosk.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable campusbite-kiosk.service
-sudo systemctl start campusbite-kiosk.service
+sudo systemctl enable munchadda-kiosk.service
+sudo systemctl start munchadda-kiosk.service
 
 # ─── STEP 8: Configure auto-login for kiosk user ─────────────────
 sudo raspi-config
@@ -5920,7 +5920,7 @@ sudo raspi-config
 echo "display_rotate=1" | sudo tee -a /boot/config.txt
 
 # ─── STEP 10: Final test ──────────────────────────────────────────
-sudo systemctl status campusbite-kiosk.service
+sudo systemctl status munchadda-kiosk.service
 # Should show: Active (running)
 
 # Test scan using a known test order QR from the admin panel
@@ -6020,15 +6020,15 @@ Train canteen staff with this workflow:
 ### 16.3 Log Rotation
 
 ```bash
-# /etc/logrotate.d/campusbite-kiosk
-/opt/campusbite-kiosk/logs/*.log {
+# /etc/logrotate.d/munchadda-kiosk
+/opt/munchadda-kiosk/logs/*.log {
     daily
     rotate 30
     compress
     missingok
     notifempty
     postrotate
-        systemctl reload campusbite-kiosk.service > /dev/null 2>&1 || true
+        systemctl reload munchadda-kiosk.service > /dev/null 2>&1 || true
     endscript
 }
 ```
@@ -6037,11 +6037,11 @@ Train canteen staff with this workflow:
 
 ```bash
 #!/bin/bash
-# /opt/campusbite-kiosk/scripts/update.sh
+# /opt/munchadda-kiosk/scripts/update.sh
 # Run via cron at 3 AM daily
 
 set -e
-cd /opt/campusbite-kiosk
+cd /opt/munchadda-kiosk
 git fetch origin
 CURRENT=$(git rev-parse HEAD)
 LATEST=$(git rev-parse origin/main)
@@ -6050,7 +6050,7 @@ if [ "$CURRENT" != "$LATEST" ]; then
     echo "Update available: $CURRENT → $LATEST"
     git pull origin main
     pip3 install -r requirements.txt --break-system-packages --quiet
-    systemctl restart campusbite-kiosk.service
+    systemctl restart munchadda-kiosk.service
     echo "Updated and restarted at $(date)"
 else
     echo "Already up to date: $CURRENT"
@@ -6060,7 +6060,7 @@ fi
 ```bash
 # Schedule in crontab (root):
 # crontab -e
-0 3 * * * /opt/campusbite-kiosk/scripts/update.sh >> /var/log/campusbite-update.log 2>&1
+0 3 * * * /opt/munchadda-kiosk/scripts/update.sh >> /var/log/munchadda-update.log 2>&1
 ```
 
 ---
@@ -6170,7 +6170,7 @@ fi
 
 ### 18.2 Per-Canteen Software Cost
 
-Software is part of the CampusBite platform — no additional licensing cost per kiosk. One-time development cost is amortised across all canteens.
+Software is part of the MunchAdda platform — no additional licensing cost per kiosk. One-time development cost is amortised across all canteens.
 
 ### 18.3 ROI Estimate
 
@@ -6230,4 +6230,4 @@ Run these in sequence in Supabase SQL editor:
 
 ---
 
-*This document is intended as the single source of truth for CampusBite kiosk development. Cross-reference with the v1.0 Master Build Plan for base system details. All code examples are production-ready starting points requiring adaptation to your exact Supabase project IDs, hardware vendor IDs, and environment.*
+*This document is intended as the single source of truth for MunchAdda kiosk development. Cross-reference with the v1.0 Master Build Plan for base system details. All code examples are production-ready starting points requiring adaptation to your exact Supabase project IDs, hardware vendor IDs, and environment.*

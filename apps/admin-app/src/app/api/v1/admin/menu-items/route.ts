@@ -107,13 +107,36 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { canteen_id } = body;
+  const { canteen_id, name, price_paise } = body;
 
   if (!canteen_id) {
     return NextResponse.json(
       { success: false, error: { code: 'VALIDATION_ERROR', message: 'canteen_id is required' } },
       { status: 400 }
     );
+  }
+
+  if (typeof name !== 'string' || name.trim().length === 0 || name.length > 120) {
+    return NextResponse.json(
+      { success: false, error: { code: 'VALIDATION_ERROR', message: 'name is required (max 120 chars)' } },
+      { status: 400 }
+    );
+  }
+
+  if (!Number.isInteger(price_paise) || price_paise < 0) {
+    return NextResponse.json(
+      { success: false, error: { code: 'VALIDATION_ERROR', message: 'price_paise must be a non-negative integer' } },
+      { status: 400 }
+    );
+  }
+
+  if (body.description !== undefined && body.description !== null) {
+    if (typeof body.description !== 'string' || body.description.length > 1000) {
+      return NextResponse.json(
+        { success: false, error: { code: 'VALIDATION_ERROR', message: 'description must be a string (max 1000 chars)' } },
+        { status: 400 }
+      );
+    }
   }
 
   // canteen_admin: verify the canteen belongs to their institute
@@ -138,13 +161,25 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Explicit column whitelist — never spread the raw body (mass-assignment).
+  const insertRow: Record<string, unknown> = {
+    canteen_id,
+    name: name.trim(),
+    price_paise,
+    description: body.description ?? null,
+    category_id: body.category_id ?? null,
+    image_url: body.image_url ?? null,
+    is_veg: typeof body.is_veg === 'boolean' ? body.is_veg : false,
+    is_available: typeof body.is_available === 'boolean' ? body.is_available : true,
+    prep_time_minutes: Number.isInteger(body.prep_time_minutes) ? body.prep_time_minutes : null,
+    sort_order: Number.isInteger(body.sort_order) ? body.sort_order : 0,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
   const { data, error } = await service
     .from('menu_items')
-    .insert({
-      ...body,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    .insert(insertRow)
     .select()
     .single();
 

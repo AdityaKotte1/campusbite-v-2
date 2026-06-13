@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Receipt, RefreshCw } from 'lucide-react';
 import { OrderCard } from '@/components/order/order-card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ACTIVE_ORDER_STATUSES, POLLING_INTERVAL_MS } from '@/lib/constants';
 import type { Order } from '@/types';
@@ -31,14 +32,19 @@ export default function OrdersPage() {
   ) ?? [];
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-4 pb-6">
+    <div className="max-w-lg mx-auto px-4 pt-4 pb-6 animate-fade-up">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-text">My Orders</h1>
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <p className="eyebrow mb-1">Your activity</p>
+          <h1 className="font-display font-semibold tracking-tight text-2xl text-text">My Orders</h1>
+          <div className="rule-amber mt-2" />
+        </div>
         <button
           onClick={() => refetch()}
           disabled={isFetching}
-          className="p-2 rounded-full text-text-3 hover:text-brand hover:bg-brand-pale transition-colors"
+          aria-label="Refresh orders"
+          className="p-2 rounded-full text-text-3 hover:text-brand hover:bg-brand-pale transition-colors cursor-pointer"
         >
           <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
         </button>
@@ -55,7 +61,7 @@ export default function OrdersPage() {
           <p className="text-text-2 text-sm mb-3">Failed to load orders</p>
           <button
             onClick={() => refetch()}
-            className="text-sm text-brand font-medium hover:text-brand-dark"
+            className="text-sm text-brand font-medium hover:text-brand-dark cursor-pointer"
           >
             Try again
           </button>
@@ -67,7 +73,7 @@ export default function OrdersPage() {
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <div className="status-dot-open" />
-                <h2 className="text-sm font-semibold text-text">Active Orders</h2>
+                <h2 className="eyebrow">Active Orders</h2>
               </div>
               <div className="space-y-3">
                 {activeOrders.map((order) => (
@@ -80,7 +86,7 @@ export default function OrdersPage() {
           {/* Past Orders */}
           {pastOrders.length > 0 && (
             <section>
-              <h2 className="text-sm font-semibold text-text mb-3">Past Orders</h2>
+              <h2 className="eyebrow mb-3">Past Orders</h2>
               <div className="space-y-3">
                 {pastOrders.map((order) => (
                   <OrderCard key={order.id} order={order} />
@@ -91,19 +97,16 @@ export default function OrdersPage() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-20 h-20 bg-brand-pale rounded-full flex items-center justify-center mb-4">
-            <Receipt className="w-10 h-10 text-brand" />
+          <div className="w-20 h-20 bg-amber-pale rounded-full flex items-center justify-center mb-5">
+            <Receipt className="w-9 h-9 text-amber-dark" />
           </div>
-          <h2 className="text-lg font-bold text-text mb-2">No orders yet</h2>
+          <h2 className="font-display font-semibold tracking-tight text-2xl text-text mb-2">No orders yet</h2>
           <p className="text-text-2 text-sm mb-6">
             Your order history will appear here once you place your first order.
           </p>
-          <a
-            href="/canteens"
-            className="px-6 py-3 bg-brand text-white rounded-xl font-semibold text-sm hover:bg-brand-dark transition-colors"
-          >
-            Browse Canteens
-          </a>
+          <Button size="lg" asChild className="cursor-pointer">
+            <a href="/canteens">Browse Canteens</a>
+          </Button>
         </div>
       )}
     </div>

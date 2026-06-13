@@ -1,5 +1,5 @@
 // ============================================================
-// CampusBite — Formatting Utilities
+// MunchAdda — Formatting Utilities
 // All monetary input is in paise (integer).
 // Dates are formatted in IST (Asia/Kolkata, UTC+5:30).
 // ============================================================

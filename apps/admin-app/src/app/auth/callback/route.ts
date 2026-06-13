@@ -11,7 +11,13 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      // SECURITY: prevent open redirects. Resolve `next` against our origin and
+      // only accept it if it stays same-origin. This defeats prefix-check
+      // bypasses like `/%09/evil.com` (the URL parser strips the tab and
+      // resolves to `//evil.com`), absolute URLs, and userinfo tricks.
+      const target = new URL(next ?? '/', origin);
+      const safeNext = target.origin === origin ? target.pathname + target.search : '/dashboard';
+      return NextResponse.redirect(new URL(safeNext, origin));
     }
   }
 

@@ -1,29 +1,33 @@
-# CampusBite Kiosk Configuration
+# MunchAdda Kiosk Configuration
 # SECURITY: Do NOT store secrets in this file.
-# Set CAMPUSBITE_API_KEY and DB_ENCRYPTION_KEY in /etc/campusbite-kiosk/secrets.env
+# Set MUNCHADDA_API_KEY and DB_ENCRYPTION_KEY in /etc/munchadda-kiosk/secrets.env
 
 server:
-  base_url: "https://campusbite.com"
+  base_url: "https://munchadda.com"
   timeout_seconds: 10
   retry_attempts: 3
   retry_delay_seconds: 1
 
 kiosk:
   id: "replace-with-kiosk-uuid-from-admin-panel"
-  # api_key is loaded from CAMPUSBITE_API_KEY environment variable.
-  # Do NOT put the key here. See /etc/campusbite-kiosk/secrets.env
+  # api_key is loaded from MUNCHADDA_API_KEY environment variable.
+  # Do NOT put the key here. See /etc/munchadda-kiosk/secrets.env
   # api_key: ""  # only used as fallback if env var not set — not recommended
   canteen_id: "replace-with-canteen-uuid"
   name: "Main Counter Kiosk"
 
 printer:
-  vendor_id: "0x0483"
-  product_id: "0x5743"
-  paper_width_mm: 58
-  chars_per_line: 32
+  vendor_id: "0x1fc9"          # run `lsusb` and use your printer's VID
+  product_id: "0x2016"         # ...and PID
+  paper_width_mm: 80           # Retsol RTP82 is 80mm
+  chars_per_line: 64           # Font B columns: 64 for 80mm, 42 for 58mm
+  institute_name: "Your Institute Name"   # printed under MUNCHADDA on the receipt
   cut_after_print: true
 
 display:
+  # headless: true → no monitor/GUI; the kiosk only scans + prints (logs feedback).
+  # headless: false → full-screen Tkinter UI on an attached display (needs X server).
+  headless: true
   fullscreen: true
   width: 800
   height: 480

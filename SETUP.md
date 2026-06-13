@@ -1,4 +1,4 @@
-# CampusBite — Complete Setup Guide
+# MunchAdda — Complete Setup Guide
 
 Read this top to bottom. Do not skip steps. Every step is in order.
 
@@ -107,7 +107,7 @@ This is the most important section. Do this carefully.
 - Click "New Project"
 - Fill in:
   - **Organization**: your name or org name
-  - **Project name**: `campusbite-prod` (or `campusbite-dev` for testing)
+  - **Project name**: `munchadda-prod` (or `munchadda-dev` for testing)
   - **Database Password**: generate a strong one and **save it somewhere safe** (you'll need it later)
   - **Region**: `ap-south-1` (Mumbai — closest to Indian users)
 - Click "Create new project"
@@ -238,7 +238,7 @@ This creates all your tables, indexes, security policies, and functions.
 - Click **"Add New Webhook"**
 - Webhook URL: `https://your-student-app.vercel.app/api/v1/payments/webhook`
   - For local testing use [ngrok](https://ngrok.com) to expose localhost (free)
-- Secret: make up a random string (e.g. `campusbite_webhook_secret_2024`) → save this as `RAZORPAY_WEBHOOK_SECRET`
+- Secret: make up a random string (e.g. `munchadda_webhook_secret_2024`) → save this as `RAZORPAY_WEBHOOK_SECRET`
 - Check these events:
   - `payment.captured`
   - `payment.failed`
@@ -256,7 +256,7 @@ This creates all your tables, indexes, security policies, and functions.
 ### Step 2 — Create a project
 - Click the project dropdown at the top (next to "Google Cloud")
 - Click **"New Project"**
-- Name: `CampusBite`
+- Name: `MunchAdda`
 - Click Create
 
 ### Step 3 — Enable Google Auth API
@@ -269,7 +269,7 @@ This creates all your tables, indexes, security policies, and functions.
 - User type: **External** (so any Google account can log in)
 - Click Create
 - Fill in:
-  - **App name**: `CampusBite`
+  - **App name**: `MunchAdda`
   - **User support email**: your email
   - **Developer contact email**: your email
 - Click Save and Continue
@@ -281,7 +281,7 @@ This creates all your tables, indexes, security policies, and functions.
 - In left sidebar: **APIs & Services → Credentials**
 - Click **"+ Create Credentials" → "OAuth client ID"**
 - Application type: **Web application**
-- Name: `CampusBite Web`
+- Name: `MunchAdda Web`
 - Under **"Authorized redirect URIs"**, click "Add URI" and add these:
   ```
   https://your-project-ref.supabase.co/auth/v1/callback
@@ -314,13 +314,13 @@ This creates all your tables, indexes, security policies, and functions.
 **Project 1 — Student App:**
 - Click "Create Project"
 - Platform: **Next.js**
-- Name: `campusbite-student`
+- Name: `munchadda-student`
 - Copy the **DSN** shown → save as `NEXT_PUBLIC_SENTRY_DSN` for student app
 
 **Project 2 — Admin App:**
 - Create another project
 - Platform: **Next.js**
-- Name: `campusbite-admin`
+- Name: `munchadda-admin`
 - Copy the **DSN** → save as `NEXT_PUBLIC_SENTRY_DSN` for admin app
 
 ---
@@ -382,7 +382,7 @@ RAZORPAY_KEY_SECRET=XXXXXXXXXXXXXXXXXXXXXXXX
 NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXXXX
 
 # Get from: Razorpay Dashboard → Settings → Webhooks (the secret you typed)
-RAZORPAY_WEBHOOK_SECRET=campusbite_webhook_secret_2024
+RAZORPAY_WEBHOOK_SECRET=munchadda_webhook_secret_2024
 
 # ─── Encryption ──────────────────────────────────────────────────────────────
 # Generated in Step 7 above (32-byte hex string)
@@ -393,7 +393,7 @@ NEXT_PUBLIC_STUDENT_APP_URL=http://localhost:3000
 NEXT_PUBLIC_ADMIN_APP_URL=http://localhost:3001
 
 # ─── Sentry ──────────────────────────────────────────────────────────────────
-# Get from: Sentry → campusbite-student project → Settings → Client Keys (DSN)
+# Get from: Sentry → munchadda-student project → Settings → Client Keys (DSN)
 NEXT_PUBLIC_SENTRY_DSN=https://xxxxxxxxxxxxxxxx@oXXXXXX.ingest.sentry.io/XXXXXXXX
 ```
 
@@ -431,7 +431,7 @@ NEXT_PUBLIC_ADMIN_APP_URL=http://localhost:3001
 NEXT_PUBLIC_STUDENT_APP_URL=http://localhost:3000
 
 # ─── Sentry ──────────────────────────────────────────────────────────────────
-# Get from: Sentry → campusbite-admin project (different DSN from student app)
+# Get from: Sentry → munchadda-admin project (different DSN from student app)
 NEXT_PUBLIC_SENTRY_DSN=https://yyyyyyyyyyyyyyyy@oXXXXXX.ingest.sentry.io/YYYYYYYY
 ```
 
@@ -579,16 +579,16 @@ Now go to the admin dashboard — you should see the canteen, categories and men
 
 ### Step 1 — Push code to GitHub
 - Create a new repository at: https://github.com/new
-- Name it: `campusbite`
+- Name it: `munchadda`
 - Keep it private
-- Copy the git remote URL (looks like `https://github.com/yourname/campusbite.git`)
+- Copy the git remote URL (looks like `https://github.com/yourname/munchadda.git`)
 
 In your terminal:
 ```bash
 git init
 git add .
-git commit -m "Initial CampusBite build"
-git remote add origin https://github.com/yourname/campusbite.git
+git commit -m "Initial MunchAdda build"
+git remote add origin https://github.com/yourname/munchadda.git
 git push -u origin main
 ```
 
@@ -604,7 +604,7 @@ git push -u origin main
 - Click **"Environment Variables"** and add ALL variables from `apps/student-app/.env.local`
   - For production: change `NEXT_PUBLIC_STUDENT_APP_URL` to your actual Vercel domain
 - Click **Deploy**
-- After deploy: copy the URL (e.g. `https://campusbite-student.vercel.app`)
+- After deploy: copy the URL (e.g. `https://munchadda-student.vercel.app`)
 
 ### Step 3 — Deploy Admin App on Vercel
 
@@ -612,16 +612,16 @@ git push -u origin main
 - **Root Directory**: `apps/admin-app`
 - Add ALL variables from `apps/admin-app/.env.local`
 - Deploy
-- Copy the URL (e.g. `https://campusbite-admin.vercel.app`)
+- Copy the URL (e.g. `https://munchadda-admin.vercel.app`)
 
 ### Step 4 — Update Supabase URLs for production
 
 In Supabase → Authentication → URL Configuration:
-- **Site URL**: `https://campusbite-student.vercel.app`
+- **Site URL**: `https://munchadda-student.vercel.app`
 - **Redirect URLs** (add all of these):
   ```
-  https://campusbite-student.vercel.app/auth/callback
-  https://campusbite-admin.vercel.app/auth/callback
+  https://munchadda-student.vercel.app/auth/callback
+  https://munchadda-admin.vercel.app/auth/callback
   http://localhost:3000/auth/callback
   http://localhost:3001/auth/callback
   ```
@@ -629,17 +629,17 @@ In Supabase → Authentication → URL Configuration:
 ### Step 5 — Update Razorpay Webhook URL
 
 In Razorpay → Settings → Webhooks:
-- Update the URL to: `https://campusbite-student.vercel.app/api/v1/payments/webhook`
+- Update the URL to: `https://munchadda-student.vercel.app/api/v1/payments/webhook`
 
 ### Step 6 — Update environment variables in Vercel
 
 In Vercel → Student App → Settings → Environment Variables:
-- Update `NEXT_PUBLIC_STUDENT_APP_URL` = `https://campusbite-student.vercel.app`
-- Update `NEXT_PUBLIC_ADMIN_APP_URL` = `https://campusbite-admin.vercel.app`
+- Update `NEXT_PUBLIC_STUDENT_APP_URL` = `https://munchadda-student.vercel.app`
+- Update `NEXT_PUBLIC_ADMIN_APP_URL` = `https://munchadda-admin.vercel.app`
 
 In Vercel → Admin App → Settings → Environment Variables:
-- Update `NEXT_PUBLIC_ADMIN_APP_URL` = `https://campusbite-admin.vercel.app`
-- Update `NEXT_PUBLIC_STUDENT_APP_URL` = `https://campusbite-student.vercel.app`
+- Update `NEXT_PUBLIC_ADMIN_APP_URL` = `https://munchadda-admin.vercel.app`
+- Update `NEXT_PUBLIC_STUDENT_APP_URL` = `https://munchadda-student.vercel.app`
 
 Redeploy both apps after changing env vars.
 
@@ -651,7 +651,7 @@ Redeploy both apps after changing env vars.
 
 ### Step 1 — Add your domain to Cloudflare
 - Go to: https://cloudflare.com → Dashboard → Add a Site
-- Enter your domain (e.g. `campusbite.in`)
+- Enter your domain (e.g. `munchadda.in`)
 - Choose Free plan
 - Cloudflare shows you nameservers → go to your domain registrar and update nameservers to the ones Cloudflare shows
 
@@ -665,8 +665,8 @@ In Cloudflare → DNS:
 | CNAME | `admin` | `cname.vercel-dns.com` | Proxied (orange) |
 
 ### Step 3 — Add custom domain in Vercel
-- Vercel → Student App → Settings → Domains → Add `campusbite.in` and `www.campusbite.in`
-- Vercel → Admin App → Settings → Domains → Add `admin.campusbite.in`
+- Vercel → Student App → Settings → Domains → Add `munchadda.in` and `www.munchadda.in`
+- Vercel → Admin App → Settings → Domains → Add `admin.munchadda.in`
 
 ---
 
@@ -695,10 +695,10 @@ In Cloudflare → DNS:
 **Step 3 — Configure settings (important!)**
 - Click the **gear icon** (⚙️) or "Edit Settings" before flashing
 - Fill in:
-  - **Hostname**: `campusbite-kiosk-01`
+  - **Hostname**: `munchadda-kiosk-01`
   - **Enable SSH**: ✅ Check this
   - **Set username and password**:
-    - Username: `campusbite`
+    - Username: `munchadda`
     - Password: choose a strong password
   - **Configure wireless LAN** (WiFi):
     - SSID: your canteen's WiFi name
@@ -721,17 +721,17 @@ In Cloudflare → DNS:
 
 **Step 1 — Find the Pi's IP address**
 - Go to your WiFi router admin page (usually `192.168.1.1` or `192.168.0.1`)
-- Look for a device named `campusbite-kiosk-01`
+- Look for a device named `munchadda-kiosk-01`
 - Note its IP address (e.g. `192.168.1.45`)
 
 **Step 2 — SSH into the Pi**
 In your PC terminal:
 ```bash
-ssh campusbite@192.168.1.45
+ssh munchadda@192.168.1.45
 ```
 Type `yes` when asked about fingerprint. Enter the password you set.
 
-You should now see the Pi command prompt: `campusbite@campusbite-kiosk-01:~$`
+You should now see the Pi command prompt: `munchadda@munchadda-kiosk-01:~$`
 
 ---
 
@@ -754,8 +754,8 @@ sudo useradd -m -s /bin/bash kiosk
 sudo usermod -aG lp,dialout,tty kiosk
 
 # Create app directory
-sudo mkdir -p /opt/campusbite-kiosk
-sudo chown campusbite:campusbite /opt/campusbite-kiosk
+sudo mkdir -p /opt/munchadda-kiosk
+sudo chown munchadda:munchadda /opt/munchadda-kiosk
 ```
 
 ---
@@ -766,7 +766,7 @@ sudo chown campusbite:campusbite /opt/campusbite-kiosk
 
 ```bash
 # From your project root folder
-scp -r kiosk/* campusbite@192.168.1.45:/opt/campusbite-kiosk/
+scp -r kiosk/* munchadda@192.168.1.45:/opt/munchadda-kiosk/
 ```
 
 Enter the Pi password when asked.
@@ -778,7 +778,7 @@ Enter the Pi password when asked.
 Back in the SSH terminal:
 
 ```bash
-cd /opt/campusbite-kiosk
+cd /opt/munchadda-kiosk
 
 # Install all Python dependencies
 pip3 install -r requirements.txt --break-system-packages
@@ -828,7 +828,7 @@ sudo udevadm trigger
 python3 -c "
 from escpos.printer import Usb
 p = Usb(0x0483, 0x5743)
-p.text('CampusBite Test\n')
+p.text('MunchAdda Test\n')
 p.cut()
 print('Print success!')
 "
@@ -855,7 +855,7 @@ You should see something like `usb-Honeywell_Scanning_...`
 
 **Step 1 — Create the config file**
 ```bash
-cd /opt/campusbite-kiosk
+cd /opt/munchadda-kiosk
 cp config/kiosk.yaml.example config/kiosk.yaml
 ```
 
@@ -867,7 +867,7 @@ nano config/kiosk.yaml
 Change these values now:
 ```yaml
 server:
-  base_url: "https://campusbite-student.vercel.app"  # your deployed student app URL
+  base_url: "https://munchadda-student.vercel.app"  # your deployed student app URL
 
 printer:
   vendor_id: "0x0483"   # replace with YOUR vendor ID from lsusb
@@ -878,8 +878,8 @@ Save: Ctrl+X → Y → Enter
 
 **Step 3 — Secure the config file**
 ```bash
-sudo chown root:root /opt/campusbite-kiosk/config/kiosk.yaml
-sudo chmod 600 /opt/campusbite-kiosk/config/kiosk.yaml
+sudo chown root:root /opt/munchadda-kiosk/config/kiosk.yaml
+sudo chmod 600 /opt/munchadda-kiosk/config/kiosk.yaml
 ```
 
 ---
@@ -888,11 +888,11 @@ sudo chmod 600 /opt/campusbite-kiosk/config/kiosk.yaml
 
 ```bash
 # Install the service
-sudo cp /opt/campusbite-kiosk/systemd/campusbite-kiosk.service /etc/systemd/system/
+sudo cp /opt/munchadda-kiosk/systemd/munchadda-kiosk.service /etc/systemd/system/
 
 # Enable it to start on boot
 sudo systemctl daemon-reload
-sudo systemctl enable campusbite-kiosk.service
+sudo systemctl enable munchadda-kiosk.service
 ```
 
 Do NOT start it yet — you need to register the kiosk first in the next section.
@@ -941,7 +941,7 @@ sudo ufw --force enable
 
 Back in the Pi SSH terminal:
 ```bash
-sudo nano /opt/campusbite-kiosk/config/kiosk.yaml
+sudo nano /opt/munchadda-kiosk/config/kiosk.yaml
 ```
 
 Fill in:
@@ -957,19 +957,19 @@ Save: Ctrl+X → Y → Enter
 
 ### Step 5 — Start the kiosk service
 ```bash
-sudo systemctl start campusbite-kiosk.service
+sudo systemctl start munchadda-kiosk.service
 ```
 
 Check it's running:
 ```bash
-sudo systemctl status campusbite-kiosk.service
+sudo systemctl status munchadda-kiosk.service
 ```
 
 Should show `Active: active (running)`.
 
 **Watch live logs:**
 ```bash
-tail -f /opt/campusbite-kiosk/logs/kiosk.log
+tail -f /opt/munchadda-kiosk/logs/kiosk.log
 ```
 
 You should see startup messages and "Kiosk ready. Waiting for scan..."
@@ -1067,7 +1067,7 @@ pnpm install
 ### Kiosk service fails to start
 ```bash
 # See exact error
-journalctl -u campusbite-kiosk.service -n 50 --no-pager
+journalctl -u munchadda-kiosk.service -n 50 --no-pager
 ```
 
 Common fixes:
@@ -1128,8 +1128,8 @@ Use this as your checklist. Tick each one as you get it.
 | `RAZORPAY_WEBHOOK_SECRET` | The string you typed when creating webhook | Student app |
 | `SECRET_ENCRYPTION_KEY` | Generated by you (node crypto command) | Both apps |
 | `KIOSK_ENCRYPTION_KEY` | Generated by you (different key) | Admin app only |
-| `NEXT_PUBLIC_SENTRY_DSN` (student) | Sentry → campusbite-student project | Student app |
-| `NEXT_PUBLIC_SENTRY_DSN` (admin) | Sentry → campusbite-admin project | Admin app |
+| `NEXT_PUBLIC_SENTRY_DSN` (student) | Sentry → munchadda-student project | Student app |
+| `NEXT_PUBLIC_SENTRY_DSN` (admin) | Sentry → munchadda-admin project | Admin app |
 | Kiosk UUID | Admin panel → Kiosks → Register → shown after form | kiosk.yaml |
 | Kiosk API Key | Admin panel → Kiosks → Register → shown ONCE | kiosk.yaml |
 | Canteen UUID | Supabase → Table Editor → canteens table | kiosk.yaml |
@@ -1139,3 +1139,269 @@ Use this as your checklist. Tick each one as you get it.
 ---
 
 *Last updated: June 2025. If anything is unclear, check the Supabase docs at docs.supabase.com or Razorpay docs at razorpay.com/docs.*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ MunchAdda Kiosk — Complete Setup Guide
+
+  What you need before starting
+
+  - Raspberry Pi 4 (2 GB RAM minimum)
+  - MicroSD card (16 GB+), power supply, keyboard+mouse (temporary, for setup only)
+  - 7" touchscreen (800×480) connected via DSI ribbon cable OR HDMI display
+  - Xprinter XP-58IIH thermal printer (USB-A cable)
+  - Honeywell 1450g barcode scanner (USB-A cable)
+  - Your MunchAdda admin-app URL (e.g. https://admin.munchadda.com)
+
+  ---
+  Part 1 — Flash & boot Raspberry Pi OS
+
+  1. Download Raspberry Pi Imager on your Windows PC: https://www.raspberrypi.com/software/
+  2. Insert the MicroSD card into your PC.
+  3. Open Imager → Choose OS → Raspberry Pi OS Lite (64-bit) (under "Raspberry Pi OS (other)") — the Lite version is headless but lighter.
+  4. Click the ⚙️ gear icon before writing:
+    - Set hostname: munchadda-kiosk
+    - Enable SSH (so you can manage it remotely later)
+    - Set username: pi, set a strong password
+    - Set your WiFi SSID and password (or skip if using Ethernet)
+    - Set locale/timezone to your region (e.g. Asia/Kolkata)
+  5. Click Write and wait. Eject and insert the MicroSD into the Pi.
+  6. Connect display, keyboard, mouse. Power on. Wait ~60 seconds for first boot.
+  7. Login as pi with the password you set.
+
+  ---
+  Part 2 — Clone the kiosk code onto the Pi
+
+  Option A — USB drive (Pi has no internet yet)
+  1. On your Windows PC, copy the entire kiosk/ folder to a USB drive.
+  2. On the Pi: sudo mkdir -p /opt/munchadda-kiosk && sudo mount /dev/sda1 /mnt && sudo cp -r /mnt/kiosk/* /opt/munchadda-kiosk/
+
+  Option B — Git (Pi already has internet)
+  sudo git clone https://github.com/YOUR_ORG/munchadda.git /tmp/munchadda
+  sudo cp -r /tmp/munchadda/kiosk/* /opt/munchadda-kiosk/
+
+  Option C — Direct copy via SSH from your Windows PC
+  In PowerShell on your PC (replace PI_IP with the Pi's IP address from your router):
+  scp -r "C:\Users\gurua\Downloads\Telegram Desktop\Canteen management\CAMPUS BITE CLEAN\kiosk\*" pi@PI_IP:/tmp/kiosk-src/
+  Then on the Pi:
+  sudo mkdir -p /opt/munchadda-kiosk
+  sudo cp -r /tmp/kiosk-src/* /opt/munchadda-kiosk/
+
+  ---
+  Part 3 — Run the setup script
+
+  cd /opt/munchadda-kiosk
+  sudo bash scripts/setup.sh
+
+  This takes 5–10 minutes. It installs Python packages, creates the kiosk system user, sets up USB device rules for the printer and scanner, configures the
+  firewall, and enables the systemd service.
+
+  After it finishes, configure auto-login for the kiosk user (so X starts on boot):
+  sudo raspi-config
+  Navigate to: System Options → Boot / Auto Login → Console Autologin
+  (This auto-logs in the pi user — we'll switch it to the kiosk user next.)
+
+  Then edit the getty service to autologin as kiosk:
+  sudo mkdir -p /etc/systemd/system/getty@tty1.service.d
+  sudo nano /etc/systemd/system/getty@tty1.service.d/override.conf
+  Paste this:
+  [Service]
+  ExecStart=
+  ExecStart=-/sbin/agetty --autologin kiosk --noclear %I $TERM
+  Save (Ctrl+O, Enter, Ctrl+X).
+
+  Now configure X to start automatically when kiosk logs into TTY1. Edit the kiosk user's profile:
+  sudo nano /home/kiosk/.bash_profile
+  Paste this (it starts X only on TTY1, prevents loop on SSH sessions):
+  if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+      startx
+  fi
+  Fix ownership:
+  sudo chown kiosk:kiosk /home/kiosk/.bash_profile
+  sudo systemctl daemon-reload
+
+  ---
+  Part 4 — Register the kiosk in the Admin Panel
+
+  1. Open your admin app in a browser (e.g. https://admin.munchadda.com).
+  2. Go to Kiosks in the sidebar → Register New Kiosk.
+  3. Fill in:
+    - Canteen: select the canteen this kiosk serves
+    - Name: e.g. Counter 1 Kiosk
+    - Location: e.g. Main Gate Counter
+    - Device ID: type any unique string for this Pi, e.g. pi-kiosk-01
+  4. Click Register.
+  5. A screen shows the API Key — copy it immediately, it is shown only once. Paste it somewhere safe (your phone notes is fine temporarily).
+  6. Also copy the Kiosk UUID (shown on the kiosk detail page after registration).
+  7. Note your Canteen UUID (visible in the URL when you're on the canteen's detail page, e.g. /canteens/abc123-...).
+
+  ---
+  Part 5 — Write the config files on the Pi
+
+  Step 5a — Main config
+  sudo cp /opt/munchadda-kiosk/config/kiosk.yaml.example /opt/munchadda-kiosk/config/kiosk.yaml
+  sudo nano /opt/munchadda-kiosk/config/kiosk.yaml
+  Edit these three lines (leave everything else as-is):
+  server:
+    base_url: "https://admin.munchadda.com"   # ← your admin-app URL
+
+  kiosk:
+    id: "paste-kiosk-uuid-from-admin-panel"     # ← UUID from Step 4
+    canteen_id: "paste-canteen-uuid"             # ← canteen UUID from Step 4
+  Save (Ctrl+O, Enter, Ctrl+X).
+
+  Step 5b — Secrets (API key)
+  sudo cp /opt/munchadda-kiosk/config/secrets.env.example /etc/munchadda-kiosk/secrets.env
+  sudo nano /etc/munchadda-kiosk/secrets.env
+  Fill in:
+  MUNCHADDA_API_KEY=paste-api-key-from-step-4-here
+  DB_ENCRYPTION_KEY=$(openssl rand -hex 32)   # ← run this separately to generate, paste the output
+  To generate the DB encryption key separately:
+  openssl rand -hex 32
+  Copy the output and paste it as the value for DB_ENCRYPTION_KEY.
+
+  Lock down the secrets file:
+  sudo chmod 600 /etc/munchadda-kiosk/secrets.env
+  sudo chown root:root /etc/munchadda-kiosk/secrets.env
+
+  ---
+  Part 6 — Connect and verify hardware
+
+  Thermal Printer:
+  lsusb
+  Look for ID 0483:5743 — if you see a different ID, note it and update printer.vendor_id and printer.product_id in kiosk.yaml.
+
+  Test print works:
+  sudo lp /etc/hostname   # prints a test page via CUPS
+  If it doesn't print, run sudo cups → open http://localhost:631 → add the printer manually there first.
+
+  Barcode Scanner:
+  ls /dev/input/event*
+  Plug/unplug the scanner and see which /dev/input/eventN appears. That's your scanner. The kiosk auto-detects it — no manual config needed.
+
+  ---
+  Part 7 — Start and verify the kiosk
+
+  sudo systemctl start munchadda-kiosk.service
+  The display should show the dark blue idle screen with the MunchAdda logo. Check logs:
+  tail -f /opt/munchadda-kiosk/logs/kiosk.log
+  A healthy startup looks like:
+  [INFO] Config loaded from config/kiosk.yaml
+  [INFO] Initialising API client …
+  [INFO] Initialising offline queue …
+  ...
+  [INFO] Sync loop started (interval=30s).
+  [INFO] Heartbeat loop started.
+  [INFO] Starting display main loop …
+
+  If it fails, the log will tell you exactly what's wrong (missing config value, wrong API key, printer not found, etc.).
+
+  ---
+  Part 8 — Test a real scan
+
+  1. Place an order on the Student App and complete payment.
+  2. Go to Orders → [the order] → QR Code tab in the student app.
+  3. Open the terminal on the Pi: tail -f /opt/munchadda-kiosk/logs/kiosk.log
+  4. Scan the QR code with the Honeywell scanner.
+  5. Display should flash green and the printer should print a receipt. Log shows [INFO] Scan accepted.
+
+  Test error cases:
+  - Scan the same QR again → display shows orange "Already Collected"
+  - Scan any random barcode → display shows red "QR code not recognised"
+  - Unplug Ethernet/WiFi → scan a valid QR → display shows green with "OFFLINE SCAN" badge, receipt prints, and it syncs to server when network returns
+
+  ---
+  Part 9 — Enable auto-start on boot
+
+  sudo systemctl enable munchadda-kiosk.service
+  sudo reboot
+
+  The Pi should boot in ~45 seconds and show the idle screen without any manual intervention.
+
+  ---
+  Part 10 — Optional: lock down the Pi for production
+
+  Prevent accidental exits and keyboard shortcuts from reaching the OS:
+
+  # Disable keyboard shortcuts in openbox
+  sudo nano /home/kiosk/.config/openbox/rc.xml
+  Remove or comment out any <keybind> entries. Also add this to kiosk.yaml to prevent the display from responding to keyboard close:
+  display:
+    fullscreen: true   # already true by default
+
+  Disable the Pi's power LED blink (optional, cleaner appearance):
+  echo 'dtparam=pwr_led_trigger=none' | sudo tee -a /boot/config.txt
+  echo 'dtparam=pwr_led_activelow=off' | sudo tee -a /boot/config.txt
+
+  ---
+  Quick reference: useful commands
+
+  ┌──────────────────────┬───────────────────────────────────────────────────┐
+  │         What         │                      Command                      │
+  ├──────────────────────┼───────────────────────────────────────────────────┤
+  │ Start kiosk          │ sudo systemctl start munchadda-kiosk             │
+  ├──────────────────────┼───────────────────────────────────────────────────┤
+  │ Stop kiosk           │ sudo systemctl stop munchadda-kiosk              │
+  ├──────────────────────┼───────────────────────────────────────────────────┤
+  │ Restart kiosk        │ sudo systemctl restart munchadda-kiosk           │
+  ├──────────────────────┼───────────────────────────────────────────────────┤
+  │ View live logs       │ tail -f /opt/munchadda-kiosk/logs/kiosk.log      │
+  ├──────────────────────┼───────────────────────────────────────────────────┤
+  │ Check if running     │ systemctl status munchadda-kiosk                 │
+  ├──────────────────────┼───────────────────────────────────────────────────┤
+  │ Update kiosk code    │ sudo bash /opt/munchadda-kiosk/scripts/update.sh │
+  ├──────────────────────┼───────────────────────────────────────────────────┤
+  │ Check USB devices    │ lsusb                                             │
+  ├──────────────────────┼───────────────────────────────────────────────────┤
+  │ Check scanner events │ ls /dev/input/event*                              │
+  ├──────────────────────┼───────────────────────────────────────────────────┤
+  │ Reload config        │ sudo systemctl restart munchadda-kiosk           │
+  └──────────────────────┴───────────────────────────────────────────────────┘
+
+  ---
+  Troubleshooting quick reference
+
+  ┌──────────────────────────────────┬──────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────┐
+  │             Symptom              │           Likely cause           │                                      Fix                                      │
+  ├──────────────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
+  │ Black screen on boot             │ X not starting                   │ Check /home/kiosk/.bash_profile, confirm autologin is set                     │
+  ├──────────────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
+  │ MUNCHADDA_API_KEY not set in    │ Secrets file missing or wrong    │ Confirm /etc/munchadda-kiosk/secrets.env exists with correct key             │
+  │ logs                             │ path                             │                                                                               │
+  ├──────────────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
+  │ Kiosk not found from server      │ Wrong kiosk UUID in config       │ Re-check kiosk.id in kiosk.yaml matches admin panel                           │
+  ├──────────────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
+  │ INVALID_SIGNATURE in logs        │ API key mismatch                 │ Re-copy key from admin panel; re-register if needed                           │
+  ├──────────────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
+  │ Printer not detected             │ Wrong USB VID:PID                │ Run lsusb, update printer.vendor_id/product_id in kiosk.yaml                  │
+  ├──────────────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
+  │ Receipt prints garbled           │ Wrong paper width                │ Set chars_per_line: 32 for 58mm paper                                         │
+  ├──────────────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
+  │ Scanner not detected             │ Missing input group              │ Run sudo usermod -aG input kiosk then reboot                                  │
+  ├──────────────────────────────────┼──────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
+  │ Service crashes immediately      │ Config YAML syntax error         │ Run python3 -c "import yaml; yaml.safe_load(open('config/kiosk.yaml'))" to    │
+  │                                  │                                  │ check                                                                         │
+  └──────────────────────────────────┴──────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────┘
+
+✻ Cooked for 5m 36s

@@ -1,34 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Brand */
-  --brand: #E8390E;
-  --brand-dark: #C12E0A;
-  --brand-light: #FF6B40;
-  --brand-pale: #FFF0EC;
+  /* Brand — appetite red-orange (primary CTA) */
+  --brand: #DD3A11;
+  --brand-dark: #B62D0A;
+  --brand-light: #F06A3C;
+  --brand-pale: #FBEADF;
 
-  /* Green */
-  --green: #00A877;
-  --green-dark: #007A57;
-  --green-light: #E6F9F4;
+  /* Amber — editorial accent */
+  --amber: #C17A16;
+  --amber-dark: #94590C;
+  --amber-light: #EBC178;
+  --amber-pale: #FBF0DC;
 
-  /* Surface & Background */
+  /* Green — veg / success */
+  --green: #1E8A5A;
+  --green-dark: #14613E;
+  --green-light: #E2F1E8;
+
+  /* Surface & cream "paper" background */
   --surface: #FFFFFF;
-  --bg: #F5F5F5;
-  --bg-2: #FAFAFA;
+  --surface-2: #FFFCF5;
+  --bg: #F4ECDD;
+  --bg-2: #FBF6EC;
 
-  /* Text */
-  --text: #111111;
-  --text-2: #555555;
-  --text-3: #999999;
+  /* Warm charcoal ink */
+  --text: #241D15;
+  --text-2: #6B5D4D;
+  --text-3: #9D8E7B;
 
-  /* Border */
-  --border: #EBEBEB;
-  --border-2: #E0E0E0;
+  /* Warm hairline borders */
+  --border: #E9DFCD;
+  --border-2: #DBCDB3;
 
   /* Spacing */
   --bottom-nav-height: 64px;
@@ -43,10 +48,17 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     scroll-behavior: smooth;
+  }
+
+  /* Editorial display headings */
+  .font-display {
+    font-family: var(--font-fraunces), Fraunces, Georgia, serif;
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
   }
 
   body {
@@ -169,14 +181,52 @@
   }
 }
 
+@layer components {
+  /* Eyebrow label — small uppercase kicker above editorial headings */
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  /* Surface card with warm hairline border + soft lift */
+  .card-editorial {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 1px 2px 0 rgba(74, 53, 30, 0.04);
+    transition: box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease;
+  }
+  .card-editorial:hover {
+    border-color: var(--border-2);
+    box-shadow: 0 10px 28px -10px rgba(74, 53, 30, 0.16);
+  }
+
+  /* Thin amber rule used as an editorial divider */
+  .rule-amber {
+    height: 2px;
+    width: 40px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--brand), var(--amber-light));
+  }
+}
+
 @layer utilities {
   .text-brand { color: var(--brand); }
   .text-brand-dark { color: var(--brand-dark); }
+  .text-amber { color: var(--amber); }
   .text-text-2 { color: var(--text-2); }
   .text-text-3 { color: var(--text-3); }
   .bg-brand { background-color: var(--brand); }
   .bg-brand-pale { background-color: var(--brand-pale); }
+  .bg-amber-pale { background-color: var(--amber-pale); }
   .border-brand { border-color: var(--brand); }
+  .bg-grain {
+    background-image: radial-gradient(rgba(74, 53, 30, 0.04) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;

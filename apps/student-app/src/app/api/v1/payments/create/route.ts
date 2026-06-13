@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import Razorpay from 'razorpay';
 import { CURRENCY } from '@/lib/constants';
 import { paymentLimiter } from '@/lib/rate-limit';
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'unauthorized', message: 'Not authenticated' }, { status: 401 });
     }
 
-    const limit = paymentLimiter(user.id);
+    const limit = await paymentLimiter(user.id);
     if (!limit.allowed) {
       return NextResponse.json(
         { success: false, error: { code: 'RATE_LIMITED', message: 'Too many payment requests. Please wait.' } },
@@ -78,11 +78,18 @@ export async function POST(request: Request) {
       },
     });
 
-    // Store razorpay_order_id on our order for webhook lookup
-    await supabase
+    // Store razorpay_order_id on our order for webhook lookup and to bind the
+    // later /payments/verify call to this specific Razorpay order. Students have
+    // no UPDATE policy on orders under RLS, so a user-context write would affect
+    // 0 rows and silently never persist — use the service-role client. Ownership
+    // was already enforced by the user-context SELECT above; we re-assert it on
+    // the privileged write so the service-role update is still scoped to the owner.
+    const service = createServiceClient();
+    await service
       .from('orders')
       .update({ razorpay_order_id: razorpayOrder.id })
-      .eq('id', order_id);
+      .eq('id', order_id)
+      .eq('user_id', user.id);
 
     return NextResponse.json({
       order_id: razorpayOrder.id,

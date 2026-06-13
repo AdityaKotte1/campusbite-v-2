@@ -1,6 +1,6 @@
 {
   "id": "/",
-  "name": "CampusBite Admin",
+  "name": "MunchAdda Admin",
   "short_name": "CB Admin",
   "description": "Manage canteens, orders, menus, kiosks, and billing.",
   "start_url": "/?source=pwa",
@@ -33,7 +33,7 @@
       "sizes": "1920x1080",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "CampusBite Admin console"
+      "label": "MunchAdda Admin console"
     }
   ],
   "shortcuts": [

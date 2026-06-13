@@ -92,8 +92,8 @@ class KioskApp:
 
         # --- Sub-systems (constructed in order of dependency) ---
         log.info("Initialising API client …")
-        from api_client import CampusBiteAPI
-        self.api = CampusBiteAPI(self.config)
+        from api_client import MunchAddaAPI
+        self.api = MunchAddaAPI(self.config)
 
         log.info("Initialising offline queue …")
         from offline.queue import OfflineQueue
@@ -114,8 +114,14 @@ class KioskApp:
         self.printer = ThermalPrinter(self.config.get("printer", {}))
 
         log.info("Initialising display …")
-        from display import KioskDisplay
-        self.display = KioskDisplay(self.config.get("display", {}), audio=self.audio)
+        display_cfg = self.config.get("display", {})
+        if display_cfg.get("headless", False):
+            from headless_display import HeadlessDisplay
+            self.display = HeadlessDisplay(display_cfg, audio=self.audio)
+            log.info("Display mode: headless (no monitor) — scan + print only.")
+        else:
+            from display import KioskDisplay
+            self.display = KioskDisplay(display_cfg, audio=self.audio)
 
         log.info("Initialising scanner …")
         from scanner import BarcodeScanner
@@ -194,7 +200,7 @@ class KioskApp:
         log.debug("Scan received raw_data: %s", _redact(raw_data) if raw_data else "")
 
         # Parse QR token
-        prefix = "campusbite://qr/"
+        prefix = "munchadda://qr/"
         if raw_data.startswith(prefix):
             token = raw_data[len(prefix):]
         else:

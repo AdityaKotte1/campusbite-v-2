@@ -52,7 +52,7 @@ export function Sidebar({ className }: { className?: string }) {
         </div>
         {!sidebarCollapsed && (
           <span className="font-display text-lg font-semibold text-text truncate tracking-tight">
-            CampusBite
+            MunchAdda
           </span>
         )}
         <button

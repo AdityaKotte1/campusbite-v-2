@@ -1,5 +1,5 @@
 // ============================================================
-// CampusBite — Zod Validation Schemas
+// MunchAdda — Zod Validation Schemas
 // ============================================================
 
 import { z } from 'zod';

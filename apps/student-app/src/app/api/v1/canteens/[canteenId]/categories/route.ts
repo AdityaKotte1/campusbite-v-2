@@ -18,8 +18,9 @@ export async function GET(_request: Request, { params }: Params) {
       .order('sort_order', { ascending: true });
 
     if (error) {
+      console.error('[canteens categories] DB error:', error);
       return NextResponse.json(
-        { error: 'database_error', message: error.message },
+        { error: 'database_error' },
         { status: 500 }
       );
     }

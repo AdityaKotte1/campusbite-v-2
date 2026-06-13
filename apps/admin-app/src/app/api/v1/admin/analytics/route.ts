@@ -1,47 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { subDays, format, startOfDay } from 'date-fns';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAdmin, allowedCanteenIds } from '@/lib/auth';
+import { subDays, format } from 'date-fns';
 
 export async function GET(request: NextRequest) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+  const { profile, response } = await requireAdmin();
+  if (response) return response;
 
   const service = createServiceClient();
 
-  // Verify admin role
-  const { data: profile, error: profileError } = await service
-    .from('users')
-    .select('role, is_active')
-    .eq('id', user.id)
-    .single();
-
-  const ADMIN_ROLES = ['super_admin', 'canteen_admin', 'staff'];
-  if (profileError || !profile || !ADMIN_ROLES.includes(profile.role) || !profile.is_active) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-      { status: 403 }
-    );
-  }
+  // Tenant scoping: null = super_admin (unrestricted); otherwise the set of
+  // canteens the caller may see. Service-role client bypasses RLS, so every
+  // order-based aggregate below MUST be scoped to these canteen IDs.
+  const allowed = await allowedCanteenIds(profile);
 
   const { searchParams } = new URL(request.url);
   const days = parseInt(searchParams.get('days') ?? '30');
   const fromDate = format(subDays(new Date(), days), "yyyy-MM-dd'T'HH:mm:ssxxx");
 
-  try {
-    // Revenue over time
-    const { data: paidOrders } = await service
-      .from('orders')
-      .select('total_paise, created_at')
-      .gte('created_at', fromDate)
-      .eq('payment_status', 'paid')
-      .order('created_at');
-
+  // Build the zeroed time-series skeleton once (reused for the empty-scope path).
+  const buildRevenueSkeleton = () => {
     const revenueByDate: Record<string, { revenue_paise: number; orders: number }> = {};
     for (let i = days - 1; i >= 0; i--) {
       const d = format(subDays(new Date(), i), 'yyyy-MM-dd');
       revenueByDate[d] = { revenue_paise: 0, orders: 0 };
     }
+    return revenueByDate;
+  };
+  const buildHourSkeleton = () => {
+    const hourMap: Record<number, number> = {};
+    for (let h = 0; h < 24; h++) hourMap[h] = 0;
+    return hourMap;
+  };
+
+  // No accessible canteens → return an empty/zeroed analytics payload.
+  if (allowed !== null && allowed.length === 0) {
+    const revenueOverTime = Object.entries(buildRevenueSkeleton()).map(([date, v]) => ({ date, ...v }));
+    const ordersByHour = Object.entries(buildHourSkeleton()).map(([hour, orders]) => ({
+      hour: parseInt(hour),
+      orders,
+    }));
+    return NextResponse.json({
+      success: true,
+      data: {
+        revenue_over_time: revenueOverTime,
+        top_items: [],
+        orders_by_hour: ordersByHour,
+        payment_methods: [],
+      },
+    });
+  }
+
+  try {
+    // Revenue over time
+    let paidQ = service
+      .from('orders')
+      .select('total_paise, created_at')
+      .gte('created_at', fromDate)
+      .eq('payment_status', 'paid')
+      .order('created_at');
+    if (allowed !== null) paidQ = paidQ.in('canteen_id', allowed);
+    const { data: paidOrders } = await paidQ;
+
+    const revenueByDate = buildRevenueSkeleton();
     (paidOrders ?? []).forEach((o) => {
       const d = format(new Date(o.created_at), 'yyyy-MM-dd');
       if (revenueByDate[d]) {
@@ -51,12 +72,14 @@ export async function GET(request: NextRequest) {
     });
     const revenueOverTime = Object.entries(revenueByDate).map(([date, v]) => ({ date, ...v }));
 
-    // Top items
-    const { data: orderItems } = await service
+    // Top items — scope via the parent order's canteen (inner join + filter)
+    let itemsQ = service
       .from('order_items')
-      .select('menu_item_id, item_name, quantity, total_price_paise, orders!inner(created_at, payment_status)')
+      .select('menu_item_id, item_name, quantity, total_price_paise, orders!inner(created_at, payment_status, canteen_id)')
       .gte('orders.created_at', fromDate)
       .eq('orders.payment_status', 'paid');
+    if (allowed !== null) itemsQ = itemsQ.in('orders.canteen_id', allowed);
+    const { data: orderItems } = await itemsQ;
 
     const itemMap: Record<string, { name: string; total_orders: number; total_revenue_paise: number }> = {};
     (orderItems ?? []).forEach((item) => {
@@ -73,13 +96,14 @@ export async function GET(request: NextRequest) {
       .slice(0, 10);
 
     // Orders by hour
-    const { data: allOrders } = await service
+    let allOrdersQ = service
       .from('orders')
       .select('created_at')
       .gte('created_at', fromDate);
+    if (allowed !== null) allOrdersQ = allOrdersQ.in('canteen_id', allowed);
+    const { data: allOrders } = await allOrdersQ;
 
-    const hourMap: Record<number, number> = {};
-    for (let h = 0; h < 24; h++) hourMap[h] = 0;
+    const hourMap = buildHourSkeleton();
     (allOrders ?? []).forEach((o) => {
       const hour = new Date(o.created_at).getHours();
       hourMap[hour] = (hourMap[hour] ?? 0) + 1;
@@ -90,12 +114,14 @@ export async function GET(request: NextRequest) {
     }));
 
     // Payment method breakdown
-    const { data: paymentOrders } = await service
+    let paymentQ = service
       .from('orders')
       .select('payment_method, total_paise')
       .gte('created_at', fromDate)
       .eq('payment_status', 'paid')
       .not('payment_method', 'is', null);
+    if (allowed !== null) paymentQ = paymentQ.in('canteen_id', allowed);
+    const { data: paymentOrders } = await paymentQ;
 
     const paymentMap: Record<string, { count: number; total_paise: number }> = {};
     (paymentOrders ?? []).forEach((o) => {

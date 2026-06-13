@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+  // The audit trail is a platform-wide function and exposes joined user PII.
+  // Restrict to super_admin only — staff/canteen_admin must not read it.
+  const { response } = await requireAdmin(['super_admin']);
+  if (response) return response;
 
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action');

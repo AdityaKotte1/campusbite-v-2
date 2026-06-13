@@ -176,8 +176,13 @@ export async function POST(request: NextRequest) {
 
   // Canteen config — canteen_admin can set for their own canteens
   if (target === 'canteen') {
-    // Verify canteen belongs to the admin's institute (non-super_admin)
-    if (!SUPER_ADMIN_ROLES.includes(profile.role) && profile.institute_id) {
+    // Verify canteen belongs to the admin's institute (non-super_admin).
+    // A canteen_admin with no institute_id can own no canteen → forbidden.
+    if (!SUPER_ADMIN_ROLES.includes(profile.role)) {
+      if (!profile.institute_id) {
+        return NextResponse.json({ success: false, error: { code: 'FORBIDDEN', message: 'This canteen does not belong to your institute' } }, { status: 403 });
+      }
+
       const { data: canteen } = await service
         .from('canteens')
         .select('institute_id')
@@ -236,6 +241,24 @@ export async function DELETE(request: NextRequest) {
       razorpay_configured_by: user.id,
     }).eq('id', id);
   } else {
+    // Canteen branch — mirror POST ownership check (non-super_admin must own
+    // the canteen via their institute; service-role bypasses RLS).
+    if (!SUPER_ADMIN_ROLES.includes(profile.role)) {
+      if (!profile.institute_id) {
+        return NextResponse.json({ success: false, error: { code: 'FORBIDDEN', message: 'This canteen does not belong to your institute' } }, { status: 403 });
+      }
+
+      const { data: canteen } = await service
+        .from('canteens')
+        .select('institute_id')
+        .eq('id', id)
+        .single();
+
+      if (!canteen || canteen.institute_id !== profile.institute_id) {
+        return NextResponse.json({ success: false, error: { code: 'FORBIDDEN', message: 'This canteen does not belong to your institute' } }, { status: 403 });
+      }
+    }
+
     await service.from('canteens').update({
       use_own_razorpay: false,
       razorpay_key_id: null,

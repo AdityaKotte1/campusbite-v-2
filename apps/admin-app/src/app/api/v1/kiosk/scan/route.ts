@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
   }
 
   // ─── 6b. Rate limit per kiosk ───────────────────────────────────────────────
-  const scanLimit = kioskScanLimiter(kioskId);
+  const scanLimit = await kioskScanLimiter(kioskId);
   if (!scanLimit.allowed) {
     return NextResponse.json(
       { success: false, error: { code: 'RATE_LIMITED', message: 'Scan rate limit exceeded' } },
@@ -118,6 +118,25 @@ export async function POST(request: NextRequest) {
       { success: false, error: { code: 'MISSING_TOKEN', message: 'token is required' } },
       { status: 400 }
     );
+  }
+
+  // ─── 7b. Defense-in-depth: token's order must belong to THIS kiosk's canteen ─
+  // Prevents kiosk A from redeeming canteen B's order QR even if the DB RPC
+  // check were bypassed. We never mark a cross-canteen token collected.
+  const { data: tokenRow } = await service
+    .from('qr_tokens')
+    .select('order_id, orders!inner(canteen_id)')
+    .eq('token', token)
+    .maybeSingle();
+
+  if (tokenRow) {
+    const order = tokenRow.orders as unknown as { canteen_id: string };
+    if (order?.canteen_id && order.canteen_id !== kiosk.canteen_id) {
+      return NextResponse.json(
+        { success: false, error_code: 'WRONG_CANTEEN', message: 'This order belongs to a different canteen' },
+        { status: 403 }
+      );
+    }
   }
 
   // ─── 8. Call Supabase RPC to atomically validate and use the QR token ───────

@@ -1,10 +1,10 @@
-/* CampusBite Admin service worker — dependency-free.
+/* MunchAdda Admin service worker — dependency-free.
  * - Navigations: network-first, fall back to cache, then the offline page.
  * - Same-origin static assets: stale-while-revalidate.
  * - NEVER caches API calls or cross-origin (Supabase, Razorpay) so admin data,
  *   auth, and payments are always live.
  */
-const CACHE = 'campusbite-admin-v1';
+const CACHE = 'munchadda-admin-v1';
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [OFFLINE_URL, '/manifest.json'];
 

@@ -77,7 +77,7 @@ function AdminLoginInner() {
             <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand shadow-warm">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
-            <span className="font-display text-2xl font-semibold text-text tracking-tight">CampusBite</span>
+            <span className="font-display text-2xl font-semibold text-text tracking-tight">MunchAdda</span>
           </div>
           <p className="eyebrow mb-2">Management Console</p>
           <h1 className="font-display text-3xl font-semibold text-text tracking-tight">Admin Portal</h1>
@@ -103,7 +103,7 @@ function AdminLoginInner() {
                 {...register('email')}
                 type="email"
                 autoComplete="email"
-                placeholder="admin@campusbite.in"
+                placeholder="admin@munchadda.in"
                 className="w-full h-10 px-3 rounded-lg border border-border bg-surface text-text text-sm placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition"
               />
               {errors.email && (

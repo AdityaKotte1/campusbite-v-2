@@ -20,7 +20,9 @@ export function useAuth() {
         // Fetch full profile
         supabase
           .from('users')
-          .select('*, institute:institutes(*)')
+          // Pin the FK so the embed is unambiguous even if a duplicate
+          // users->institutes FK exists (see fix-duplicate-institute-fk.sql).
+          .select('*, institute:institutes!users_institute_id_fkey(*)')
           .eq('id', authUser.id)
           .single()
           .then(({ data }) => {
@@ -57,7 +59,7 @@ export function useAuth() {
       if (event === 'SIGNED_IN' && session?.user) {
         const { data } = await supabase
           .from('users')
-          .select('*, institute:institutes(*)')
+          .select('*, institute:institutes!users_institute_id_fkey(*)')
           .eq('id', session.user.id)
           .single();
 

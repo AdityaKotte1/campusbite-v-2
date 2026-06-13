@@ -1,4 +1,4 @@
-// CampusBite subscription pricing — single source of truth (used by the admin
+// MunchAdda subscription pricing — single source of truth (used by the admin
 // API to compute charges and by the UI to preview them). All amounts in paise.
 
 export type BillingCycle = 'monthly' | 'biannual' | 'annual';

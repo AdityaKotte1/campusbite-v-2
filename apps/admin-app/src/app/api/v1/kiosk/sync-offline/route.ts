@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
   const { data: kiosk } = await service
     .from('kiosks')
-    .select('id, api_key_encrypted, is_active')
+    .select('id, canteen_id, api_key_encrypted, is_active')
     .eq('id', kioskId)
     .single();
 
@@ -87,41 +87,52 @@ export async function POST(request: NextRequest) {
   }
 
   const scans = body.scans ?? [];
+
+  // Bound the work per request — reject oversized batches.
+  const MAX_OFFLINE_BATCH = 200;
+  if (scans.length > MAX_OFFLINE_BATCH) {
+    return NextResponse.json(
+      { success: false, error: { code: 'BATCH_TOO_LARGE', message: `scans exceeds max batch of ${MAX_OFFLINE_BATCH}` } },
+      { status: 400 }
+    );
+  }
+
   const results: Array<{ token: string; status: 'synced' | 'conflict' | 'error'; error?: string }> = [];
 
   for (const scan of scans) {
     try {
+      // Defense-in-depth: the token's order must belong to THIS kiosk's canteen.
+      // Reject cross-canteen tokens without ever marking them collected.
+      const { data: tokenRow } = await service
+        .from('qr_tokens')
+        .select('order_id, orders!inner(canteen_id)')
+        .eq('token', scan.token)
+        .maybeSingle();
+
+      if (tokenRow) {
+        const order = tokenRow.orders as unknown as { canteen_id: string };
+        if (order?.canteen_id && order.canteen_id !== kiosk.canteen_id) {
+          results.push({ token: scan.token, status: 'error', error: 'WRONG_CANTEEN' });
+          continue;
+        }
+      }
+
+      // The RPC is the source of truth and logs kiosk_scans internally — do NOT
+      // double-insert here.
       const { data: rpcData, error: rpcError } = await service.rpc('validate_and_use_qr_token', {
         p_token: scan.token,
         p_kiosk_id: kioskId,
-        p_metadata: { offline: true, scanned_at_local: scan.scanned_at_local },
+        p_kiosk_meta: { offline: true, scanned_at_local: scan.scanned_at_local },
       });
 
       if (rpcError) {
         results.push({ token: scan.token, status: 'error', error: rpcError.message });
       } else {
-        const result = rpcData as { success: boolean; error?: string };
+        const result = rpcData as { success: boolean; error_code?: string; message?: string };
         if (result.success) {
           results.push({ token: scan.token, status: 'synced' });
-
-          // Log scan
-          await service.from('kiosk_scans').insert({
-            kiosk_id: kioskId,
-            token: scan.token,
-            scanned_at: scan.scanned_at_local,
-            result: 'success',
-            failure_reason: null,
-          });
         } else {
-          results.push({ token: scan.token, status: 'conflict', error: result.error });
-
-          await service.from('kiosk_scans').insert({
-            kiosk_id: kioskId,
-            token: scan.token,
-            scanned_at: scan.scanned_at_local,
-            result: result.error?.includes('already') ? 'already_used' : 'failure',
-            failure_reason: result.error,
-          });
+          results.push({ token: scan.token, status: 'conflict', error: result.message ?? result.error_code });
         }
       }
     } catch (err) {

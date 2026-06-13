@@ -1,35 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { VALID_STATUS_TRANSITIONS } from '@/lib/constants';
+import {
+  requireAdmin,
+  allowedCanteenIds,
+  canAccessCanteen,
+  forbidden,
+  notFound,
+} from '@/lib/auth';
 
 const statusSchema = z.object({
   status: z.string(),
 });
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
-  }
+  const { profile, response } = await requireAdmin(['super_admin', 'canteen_admin', 'staff']);
+  if (response) return response;
 
   const service = createServiceClient();
-
-  // Verify admin role
-  const { data: profile, error: profileError } = await service
-    .from('users')
-    .select('role, is_active')
-    .eq('id', user.id)
-    .single();
-
-  const ADMIN_ROLES = ['super_admin', 'canteen_admin', 'staff'];
-  if (profileError || !profile || !ADMIN_ROLES.includes(profile.role) || !profile.is_active) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-      { status: 403 }
-    );
-  }
 
   const body = await request.json();
   const parsed = statusSchema.safeParse(body);
@@ -42,18 +31,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
   const { status: newStatus } = parsed.data;
 
-  // Get current order status
+  // Get current order status + canteen for tenant scoping
   const { data: order, error: fetchError } = await service
     .from('orders')
-    .select('id, status')
+    .select('id, status, canteen_id')
     .eq('id', params.id)
     .single();
 
   if (fetchError || !order) {
-    return NextResponse.json(
-      { success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } },
-      { status: 404 }
-    );
+    return notFound('Order not found');
+  }
+
+  // Tenant scoping: caller may only drive orders for canteens they can access.
+  const allowed = await allowedCanteenIds(profile);
+  if (!canAccessCanteen(order.canteen_id, allowed)) {
+    return forbidden('Cannot manage this order');
   }
 
   // Validate transition
@@ -93,7 +85,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
   // Log to audit_logs
   await service.from('audit_logs').insert({
-    user_id: user.id,
+    user_id: profile.id,
     action: `order.status_change`,
     entity_type: 'order',
     entity_id: params.id,

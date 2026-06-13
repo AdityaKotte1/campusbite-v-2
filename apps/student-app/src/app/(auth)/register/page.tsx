@@ -8,6 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Loader2, Mail, Lock, User } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { registerSchema, type RegisterInput } from '@/lib/validation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -70,8 +72,8 @@ export default function RegisterPage() {
 
   if (isSuccess) {
     return (
-      <div className="text-center py-4">
-        <div className="w-16 h-16 bg-green-light rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="text-center py-4 animate-fade-up">
+        <div className="w-16 h-16 bg-green-light rounded-full flex items-center justify-center mx-auto mb-5">
           <svg
             className="w-8 h-8 text-green"
             fill="none"
@@ -86,17 +88,17 @@ export default function RegisterPage() {
             />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-text mb-2">Check your email!</h2>
+        <p className="eyebrow text-green-dark mb-1.5">Almost there</p>
+        <h2 className="font-display text-2xl font-semibold tracking-tight text-text mb-2">
+          Check your email
+        </h2>
         <p className="text-text-2 text-sm mb-6">
           We&apos;ve sent a verification link to your email. Click it to activate your
           account and start ordering.
         </p>
-        <Link
-          href="/login"
-          className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-brand text-white font-semibold text-sm hover:bg-brand-dark transition-colors"
-        >
-          Back to Sign In
-        </Link>
+        <Button asChild size="lg" className="cursor-pointer">
+          <Link href="/login">Back to Sign In</Link>
+        </Button>
       </div>
     );
   }
@@ -104,16 +106,22 @@ export default function RegisterPage() {
   return (
     <>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text mb-1">Create account</h1>
-        <p className="text-text-2 text-sm">Join CampusBite and order from your canteen</p>
+        <p className="eyebrow text-brand mb-1.5">Join the table</p>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-text mb-1.5">
+          Create your account
+        </h1>
+        <div className="rule-amber mb-3" />
+        <p className="text-text-2 text-sm">Order fresh from your campus canteen.</p>
       </div>
 
       {/* Google OAuth */}
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="lg"
         onClick={handleGoogleLogin}
         disabled={isOAuthLoading || isSubmitting}
-        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 border-border hover:border-brand hover:bg-brand-pale transition-all duration-150 text-text font-medium text-sm mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full mb-5 cursor-pointer"
       >
         {isOAuthLoading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -138,7 +146,7 @@ export default function RegisterPage() {
           </svg>
         )}
         {isOAuthLoading ? 'Redirecting...' : 'Continue with Google'}
-      </button>
+      </Button>
 
       {/* Divider */}
       <div className="relative mb-5">
@@ -146,7 +154,7 @@ export default function RegisterPage() {
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="bg-white px-3 text-text-3">or sign up with email</span>
+          <span className="bg-surface px-3 text-text-3">or sign up with email</span>
         </div>
       </div>
 
@@ -162,100 +170,70 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         {/* Full Name */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1.5">Full name</label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none" />
-            <input
-              {...register('full_name')}
-              type="text"
-              autoComplete="name"
-              placeholder="Aarav Sharma"
-              className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm transition-colors bg-white text-text placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand ${
-                errors.full_name ? 'border-red-400 bg-red-50' : 'border-border hover:border-border-2'
-              }`}
-            />
-          </div>
-          {errors.full_name && (
-            <p className="mt-1 text-xs text-red-600">{errors.full_name.message}</p>
-          )}
-        </div>
+        <Input
+          {...register('full_name')}
+          label="Full name"
+          type="text"
+          autoComplete="name"
+          placeholder="Aarav Sharma"
+          leftIcon={<User className="w-4 h-4" />}
+          error={errors.full_name?.message}
+        />
 
         {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1.5">Email address</label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none" />
-            <input
-              {...register('email')}
-              type="email"
-              autoComplete="email"
-              placeholder="you@college.edu"
-              className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm transition-colors bg-white text-text placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand ${
-                errors.email ? 'border-red-400 bg-red-50' : 'border-border hover:border-border-2'
-              }`}
-            />
-          </div>
-          {errors.email && (
-            <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
-          )}
-        </div>
+        <Input
+          {...register('email')}
+          label="Email address"
+          type="email"
+          autoComplete="email"
+          placeholder="you@college.edu"
+          leftIcon={<Mail className="w-4 h-4" />}
+          error={errors.email?.message}
+        />
 
         {/* Password */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1.5">Password</label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none" />
-            <input
-              {...register('password')}
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              placeholder="Min. 8 characters"
-              className={`w-full pl-10 pr-10 py-3 rounded-xl border text-sm transition-colors bg-white text-text placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand ${
-                errors.password ? 'border-red-400 bg-red-50' : 'border-border hover:border-border-2'
-              }`}
-            />
+        <Input
+          {...register('password')}
+          label="Password"
+          type={showPassword ? 'text' : 'password'}
+          autoComplete="new-password"
+          placeholder="Min. 8 characters"
+          leftIcon={<Lock className="w-4 h-4" />}
+          error={errors.password?.message}
+          rightIcon={
             <button
               type="button"
               onClick={() => setShowPassword((p) => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-3 hover:text-text-2 transition-colors"
+              className="text-text-3 hover:text-text-2 transition-colors cursor-pointer"
               tabIndex={-1}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-          </div>
-          {errors.password && (
-            <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
-          )}
-        </div>
+          }
+        />
 
         {/* Confirm Password */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1.5">Confirm password</label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none" />
-            <input
-              {...register('confirm_password')}
-              type={showConfirmPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              placeholder="Re-enter your password"
-              className={`w-full pl-10 pr-10 py-3 rounded-xl border text-sm transition-colors bg-white text-text placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand ${
-                errors.confirm_password ? 'border-red-400 bg-red-50' : 'border-border hover:border-border-2'
-              }`}
-            />
+        <Input
+          {...register('confirm_password')}
+          label="Confirm password"
+          type={showConfirmPassword ? 'text' : 'password'}
+          autoComplete="new-password"
+          placeholder="Re-enter your password"
+          leftIcon={<Lock className="w-4 h-4" />}
+          error={errors.confirm_password?.message}
+          rightIcon={
             <button
               type="button"
               onClick={() => setShowConfirmPassword((p) => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-3 hover:text-text-2 transition-colors"
+              className="text-text-3 hover:text-text-2 transition-colors cursor-pointer"
               tabIndex={-1}
+              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
             >
               {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-          </div>
-          {errors.confirm_password && (
-            <p className="mt-1 text-xs text-red-600">{errors.confirm_password.message}</p>
-          )}
-        </div>
+          }
+        />
 
         {/* Terms */}
         <div className="flex items-start gap-3">
@@ -267,11 +245,11 @@ export default function RegisterPage() {
           />
           <label htmlFor="accept_terms" className="text-sm text-text-2 cursor-pointer">
             I agree to the{' '}
-            <Link href="/terms" className="text-brand hover:text-brand-dark font-medium">
+            <Link href="/legal/terms" className="text-brand hover:text-brand-dark font-medium">
               Terms of Service
             </Link>{' '}
             and{' '}
-            <Link href="/privacy" className="text-brand hover:text-brand-dark font-medium">
+            <Link href="/legal/privacy" className="text-brand hover:text-brand-dark font-medium">
               Privacy Policy
             </Link>
           </label>
@@ -281,10 +259,11 @@ export default function RegisterPage() {
         )}
 
         {/* Submit */}
-        <button
+        <Button
           type="submit"
+          size="lg"
           disabled={isSubmitting || isOAuthLoading}
-          className="w-full py-3.5 px-4 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-sm transition-all duration-150 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+          className="w-full mt-1 cursor-pointer"
         >
           {isSubmitting ? (
             <>
@@ -294,7 +273,7 @@ export default function RegisterPage() {
           ) : (
             'Create account'
           )}
-        </button>
+        </Button>
       </form>
 
       {/* Login link */}

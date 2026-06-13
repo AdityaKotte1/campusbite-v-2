@@ -1,4 +1,4 @@
-"""Generate CampusBite PWA icons + screenshots into public/.
+"""Generate MunchAdda PWA icons + screenshots into public/.
 Run: python apps/student-app/scripts/gen_pwa_assets.py
 """
 import os
@@ -44,10 +44,10 @@ def icon(size, maskable=False):
     if maskable:
         img = Image.new("RGBA", (size, size), BRAND + (255,))
         d = ImageDraw.Draw(img)
-        centered(d, "CB", font(int(size * 0.34)), size / 2, size / 2)
+        centered(d, "MA", font(int(size * 0.34)), size / 2, size / 2)
     else:
         img, d = rounded(size)
-        centered(d, "CB", font(int(size * 0.42)), size / 2, size / 2)
+        centered(d, "MA", font(int(size * 0.42)), size / 2, size / 2)
     return img
 
 
@@ -71,7 +71,7 @@ def screenshot_mobile():
     d = ImageDraw.Draw(img)
     # header
     d.rectangle([0, 0, W, 300], fill=BRAND)
-    centered(d, "CampusBite", font(76), W / 2, 130, WHITE)
+    centered(d, "MunchAdda", font(76), W / 2, 130, WHITE)
     centered(d, "Skip the queue. Order ahead.", font(36, False), W / 2, 215, PALE)
     # search bar
     d.rounded_rectangle([60, 360, W - 60, 460], radius=26, fill=WHITE)
@@ -104,9 +104,9 @@ def screenshot_wide():
     d = ImageDraw.Draw(img)
     logo, _ = rounded(240, radius_frac=0.26, bg=WHITE)
     ld = ImageDraw.Draw(logo)
-    centered(ld, "CB", font(110), 120, 120, BRAND)
+    centered(ld, "MA", font(110), 120, 120, BRAND)
     img.paste(logo, (int(W / 2 - 120), 300), logo)
-    centered(d, "CampusBite", font(120), W / 2, 660, WHITE)
+    centered(d, "MunchAdda", font(120), W / 2, 660, WHITE)
     centered(d, "Order food from your campus canteen", font(50, False), W / 2, 770, PALE)
     save(img, "screenshot-wide.png")
 

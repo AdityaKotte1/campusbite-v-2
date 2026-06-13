@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     if (error) {
       console.error('Canteens fetch error:', error);
       return NextResponse.json(
-        { error: 'database_error', message: error.message },
+        { error: 'database_error' },
         { status: 500 }
       );
     }

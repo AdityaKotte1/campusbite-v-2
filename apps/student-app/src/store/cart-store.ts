@@ -66,7 +66,7 @@ export const useCartStore = create<CartStore>()(
         }),
     })),
     {
-      name: 'campusbite-cart',
+      name: 'munchadda-cart',
       partialize: (state) => ({
         items: state.items,
         canteenId: state.canteenId,

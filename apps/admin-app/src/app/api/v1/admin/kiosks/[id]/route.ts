@@ -1,27 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import {
+  requireAdmin,
+  allowedCanteenIds,
+  canAccessCanteen,
+  forbidden,
+  notFound,
+} from '@/lib/auth';
+
+/**
+ * Load the kiosk's canteen_id and verify the caller may act on it.
+ * Returns `{ canteenId }` on success or `{ response }` (404/403) to return.
+ */
+async function requireKioskAccess(
+  service: ReturnType<typeof createServiceClient>,
+  kioskId: string,
+  profile: Parameters<typeof allowedCanteenIds>[0]
+): Promise<{ canteenId: string; response?: undefined } | { canteenId?: undefined; response: NextResponse }> {
+  const { data: kiosk } = await service
+    .from('kiosks')
+    .select('canteen_id')
+    .eq('id', kioskId)
+    .single();
+
+  if (!kiosk) return { response: notFound('Kiosk not found') };
+
+  const allowed = await allowedCanteenIds(profile);
+  if (!canAccessCanteen(kiosk.canteen_id, allowed)) {
+    return { response: forbidden('This kiosk does not belong to your institute') };
+  }
+
+  return { canteenId: kiosk.canteen_id };
+}
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+  const { profile, response } = await requireAdmin(['super_admin', 'canteen_admin']);
+  if (response) return response;
 
   const service = createServiceClient();
 
-  // Verify admin role
-  const { data: profile, error: profileError } = await service
-    .from('users')
-    .select('role, is_active')
-    .eq('id', user.id)
-    .single();
-
-  const ADMIN_ROLES = ['super_admin', 'canteen_admin', 'staff'];
-  if (profileError || !profile || !ADMIN_ROLES.includes(profile.role) || !profile.is_active) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-      { status: 403 }
-    );
-  }
+  const access = await requireKioskAccess(service, params.id, profile);
+  if (access.response) return access.response;
 
   const [kioskResult, scansResult] = await Promise.all([
     service
@@ -63,27 +82,15 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+  const { profile, response } = await requireAdmin(['super_admin', 'canteen_admin']);
+  if (response) return response;
 
-  const body = await request.json();
   const service = createServiceClient();
 
-  // Verify admin role
-  const { data: profile, error: profileError } = await service
-    .from('users')
-    .select('role, is_active')
-    .eq('id', user.id)
-    .single();
+  const access = await requireKioskAccess(service, params.id, profile);
+  if (access.response) return access.response;
 
-  const ADMIN_ROLES = ['super_admin', 'canteen_admin', 'staff'];
-  if (profileError || !profile || !ADMIN_ROLES.includes(profile.role) || !profile.is_active) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-      { status: 403 }
-    );
-  }
+  const body = await request.json();
 
   const allowedFields = ['name', 'location', 'is_active'];
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -103,26 +110,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+  const { profile, response } = await requireAdmin(['super_admin', 'canteen_admin']);
+  if (response) return response;
 
   const service = createServiceClient();
 
-  // Verify admin role
-  const { data: profile, error: profileError } = await service
-    .from('users')
-    .select('role, is_active')
-    .eq('id', user.id)
-    .single();
-
-  const ADMIN_ROLES = ['super_admin', 'canteen_admin', 'staff'];
-  if (profileError || !profile || !ADMIN_ROLES.includes(profile.role) || !profile.is_active) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-      { status: 403 }
-    );
-  }
+  const access = await requireKioskAccess(service, params.id, profile);
+  if (access.response) return access.response;
 
   const { error } = await service
     .from('kiosks')
@@ -132,7 +126,7 @@ export async function DELETE(_: NextRequest, { params }: { params: { id: string 
   if (error) return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
 
   await service.from('audit_logs').insert({
-    user_id: user.id,
+    user_id: profile.id,
     action: 'kiosk.deactivate',
     entity_type: 'kiosk',
     entity_id: params.id,

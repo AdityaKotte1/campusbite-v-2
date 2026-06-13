@@ -1,5 +1,5 @@
 """
-SyncManager — uploads queued offline scans to the CampusBite server
+SyncManager — uploads queued offline scans to the MunchAdda server
 in batches of 50 and marks each as synced or conflicted.
 """
 
@@ -8,7 +8,7 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from api_client import CampusBiteAPI
+    from api_client import MunchAddaAPI
     from offline.queue import OfflineQueue
 
 log = logging.getLogger("offline.sync")
@@ -19,7 +19,7 @@ _BATCH_SIZE = 50
 class SyncManager:
     """Pushes pending offline scans to the server."""
 
-    def __init__(self, api: "CampusBiteAPI", queue: "OfflineQueue") -> None:
+    def __init__(self, api: "MunchAddaAPI", queue: "OfflineQueue") -> None:
         self.api = api
         self.queue = queue
 

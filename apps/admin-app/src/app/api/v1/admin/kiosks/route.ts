@@ -1,33 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { encryptApiKey } from '@/lib/encryption';
+import { requireAdmin, allowedCanteenIds, canAccessCanteen, forbidden } from '@/lib/auth';
 
 export async function GET(_: NextRequest) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+  const { profile, response } = await requireAdmin(['super_admin', 'canteen_admin']);
+  if (response) return response;
 
   const service = createServiceClient();
 
-  // Verify admin role
-  const { data: profile, error: profileError } = await service
-    .from('users')
-    .select('role, is_active')
-    .eq('id', user.id)
-    .single();
+  // Tenant scoping: super_admin (null) sees all; others only their canteens.
+  const allowed = await allowedCanteenIds(profile);
 
-  const ADMIN_ROLES = ['super_admin', 'canteen_admin', 'staff'];
-  if (profileError || !profile || !ADMIN_ROLES.includes(profile.role) || !profile.is_active) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-      { status: 403 }
-    );
-  }
-  const { data, error } = await service
+  let query = service
     .from('kiosks')
     .select('*, canteens(id, name, location)')
     .order('created_at', { ascending: false });
+
+  if (allowed !== null) {
+    if (allowed.length === 0) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+    query = query.in('canteen_id', allowed);
+  }
+
+  const { data, error } = await query;
 
   if (error) return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
 
@@ -38,26 +36,8 @@ export async function GET(_: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
-
-  {
-    const service = createServiceClient();
-    const { data: profile, error: profileError } = await service
-      .from('users')
-      .select('role, is_active')
-      .eq('id', user.id)
-      .single();
-
-    const ADMIN_ROLES = ['super_admin', 'canteen_admin', 'staff'];
-    if (profileError || !profile || !ADMIN_ROLES.includes(profile.role) || !profile.is_active) {
-      return NextResponse.json(
-        { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-        { status: 403 }
-      );
-    }
-  }
+  const { profile, response } = await requireAdmin(['super_admin', 'canteen_admin']);
+  if (response) return response;
 
   const body = await request.json();
   const { name, canteen_id, location, device_id } = body;
@@ -67,6 +47,12 @@ export async function POST(request: NextRequest) {
       { success: false, error: { code: 'INVALID_INPUT', message: 'name, canteen_id and device_id are required' } },
       { status: 400 }
     );
+  }
+
+  // Tenant scoping: caller may only register a kiosk for a canteen they own.
+  const allowed = await allowedCanteenIds(profile);
+  if (!canAccessCanteen(canteen_id, allowed)) {
+    return forbidden('This canteen does not belong to your institute');
   }
 
   // Generate cryptographically secure API key (48 bytes = 96 hex chars)
@@ -100,7 +86,7 @@ export async function POST(request: NextRequest) {
 
   // Audit log
   await service.from('audit_logs').insert({
-    user_id: user.id,
+    user_id: profile.id,
     action: 'kiosk.register',
     entity_type: 'kiosk',
     entity_id: data.id,

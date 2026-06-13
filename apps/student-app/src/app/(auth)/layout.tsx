@@ -11,10 +11,10 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-pale via-white to-orange-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-bg flex flex-col items-center justify-center p-4">
       {/* Logo */}
-      <div className="mb-8 flex flex-col items-center gap-2">
-        <div className="w-14 h-14 rounded-2xl bg-brand flex items-center justify-center shadow-lg">
+      <div className="mb-8 flex flex-col items-center gap-2.5 animate-fade-up">
+        <div className="w-14 h-14 rounded-2xl bg-brand flex items-center justify-center shadow-warm">
           <svg
             width="32"
             height="32"
@@ -34,19 +34,19 @@ export default function AuthLayout({
             <circle cx="22" cy="9" r="3" fill="#FF6B40" />
           </svg>
         </div>
-        <span className="text-2xl font-bold text-text tracking-tight">
+        <span className="font-display text-2xl font-semibold text-text tracking-tight">
           Campus<span className="text-brand">Bite</span>
         </span>
         <p className="text-sm text-text-2">Skip the queue. Get it fresh.</p>
       </div>
 
       {/* Card */}
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-border p-6 md:p-8">
+      <div className="w-full max-w-md bg-surface rounded-2xl shadow-lg border border-border p-6 md:p-8 animate-fade-up">
         {children}
       </div>
 
       <p className="mt-6 text-xs text-text-3 text-center">
-        &copy; {new Date().getFullYear()} CampusBite. All rights reserved.
+        &copy; {new Date().getFullYear()} MunchAdda. All rights reserved.
       </p>
     </div>
   );

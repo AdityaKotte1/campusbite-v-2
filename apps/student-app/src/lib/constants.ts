@@ -1,4 +1,4 @@
-export const APP_NAME = 'CampusBite';
+export const APP_NAME = 'MunchAdda';
 
 export const ROUTES = {
   HOME: '/',

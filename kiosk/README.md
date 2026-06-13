@@ -1,7 +1,7 @@
-# CampusBite Kiosk
+# MunchAdda Kiosk
 
 Self-service QR collection kiosk for campus canteens.  
-Students scan the QR code from the CampusBite app; the kiosk prints a
+Students scan the QR code from the MunchAdda app; the kiosk prints a
 numbered receipt that they present at the counter to collect their order.
 
 ---
@@ -30,11 +30,11 @@ numbered receipt that they present at the counter to collect their order.
 1. Download **Raspberry Pi OS Lite 64-bit** (Bookworm) from
    [raspberrypi.com/software](https://www.raspberrypi.com/software/).
 2. Flash to MicroSD using Raspberry Pi Imager.
-   - In Imager "Advanced settings": enable SSH, set hostname `campusbite-kiosk`,
+   - In Imager "Advanced settings": enable SSH, set hostname `munchadda-kiosk`,
      set username `pi`, set WiFi credentials.
 3. Boot the Pi, SSH in:
    ```bash
-   ssh pi@campusbite-kiosk.local
+   ssh pi@munchadda-kiosk.local
    ```
 
 ---
@@ -43,12 +43,12 @@ numbered receipt that they present at the counter to collect their order.
 
 ```bash
 # Clone repository
-sudo mkdir -p /opt/campusbite-kiosk
-sudo git clone https://github.com/campusbite/kiosk.git /opt/campusbite-kiosk
-sudo chown -R pi:pi /opt/campusbite-kiosk
+sudo mkdir -p /opt/munchadda-kiosk
+sudo git clone https://github.com/munchadda/kiosk.git /opt/munchadda-kiosk
+sudo chown -R pi:pi /opt/munchadda-kiosk
 
 # Run setup script (installs deps, creates kiosk user, sets up service)
-cd /opt/campusbite-kiosk
+cd /opt/munchadda-kiosk
 sudo bash scripts/setup.sh
 ```
 
@@ -57,16 +57,16 @@ sudo bash scripts/setup.sh
 ## 4. Config: config/kiosk.yaml
 
 ```bash
-cp /opt/campusbite-kiosk/config/kiosk.yaml.example \
-   /opt/campusbite-kiosk/config/kiosk.yaml
-nano /opt/campusbite-kiosk/config/kiosk.yaml
+cp /opt/munchadda-kiosk/config/kiosk.yaml.example \
+   /opt/munchadda-kiosk/config/kiosk.yaml
+nano /opt/munchadda-kiosk/config/kiosk.yaml
 ```
 
-Fields to fill in (get from CampusBite Admin Panel → Kiosks):
+Fields to fill in (get from MunchAdda Admin Panel → Kiosks):
 
 | Field | Where to find |
 |-------|---------------|
-| `server.base_url` | e.g. `https://api.campusbite.com` |
+| `server.base_url` | e.g. `https://api.munchadda.com` |
 | `kiosk.id` | Admin Panel → Kiosks → New Kiosk → UUID |
 | `kiosk.api_key` | Same page, copy the generated key |
 | `kiosk.canteen_id` | Admin Panel → Canteens → your canteen UUID |
@@ -100,12 +100,12 @@ sudo systemctl enable cups
 sudo usermod -aG lp kiosk
 
 # Open CUPS web UI from another machine:
-# http://campusbite-kiosk.local:631
+# http://munchadda-kiosk.local:631
 ```
 
 ### Test print
 ```bash
-cd /opt/campusbite-kiosk
+cd /opt/munchadda-kiosk
 python3 -c "
 from printer import ThermalPrinter
 import yaml
@@ -142,11 +142,11 @@ If the name contains "barcode", "scanner", "honeywell", or "zebra" it will be
 auto-detected.  Otherwise the kiosk falls back to keyboard input.
 
 ### QR content format
-All CampusBite QR codes encode:
+All MunchAdda QR codes encode:
 ```
-campusbite://qr/<uuid>
+munchadda://qr/<uuid>
 ```
-Example: `campusbite://qr/550e8400-e29b-41d4-a716-446655440000`
+Example: `munchadda://qr/550e8400-e29b-41d4-a716-446655440000`
 
 ---
 
@@ -154,14 +154,14 @@ Example: `campusbite://qr/550e8400-e29b-41d4-a716-446655440000`
 
 Before going live, run through:
 
-- [ ] `systemctl status campusbite-kiosk.service` shows `active (running)`
+- [ ] `systemctl status munchadda-kiosk.service` shows `active (running)`
 - [ ] Display shows "SCAN YOUR QR CODE" on deep blue background
 - [ ] Scan a valid QR → green success screen + receipt prints
 - [ ] Scan same QR again → orange "Already Collected" screen
 - [ ] Scan expired/invalid QR → red error screen
 - [ ] Disconnect Ethernet → "OFFLINE SCAN" badge appears on success
 - [ ] Reconnect → pending syncs upload (check logs)
-- [ ] `tail -f /opt/campusbite-kiosk/logs/kiosk.log` shows heartbeat every 60s
+- [ ] `tail -f /opt/munchadda-kiosk/logs/kiosk.log` shows heartbeat every 60s
 - [ ] Printer runs out of paper → `get_status()` returns `"error"` (check admin dash)
 - [ ] Reboot Pi → kiosk auto-starts within 20s
 
@@ -171,8 +171,8 @@ Before going live, run through:
 
 ### Kiosk won't start
 ```bash
-journalctl -u campusbite-kiosk.service -n 50
-tail -50 /opt/campusbite-kiosk/logs/kiosk.log
+journalctl -u munchadda-kiosk.service -n 50
+tail -50 /opt/munchadda-kiosk/logs/kiosk.log
 ```
 
 ### Display is blank / Tkinter crash
@@ -181,7 +181,7 @@ tail -50 /opt/campusbite-kiosk/logs/kiosk.log
 echo $DISPLAY           # should be :0
 
 # Try running manually as kiosk user
-sudo -u kiosk DISPLAY=:0 python3 /opt/campusbite-kiosk/main.py
+sudo -u kiosk DISPLAY=:0 python3 /opt/munchadda-kiosk/main.py
 ```
 
 ### Printer not found
@@ -210,7 +210,7 @@ sudo usermod -aG input kiosk
 ### Offline mode not working
 ```bash
 # Check DB
-sqlite3 /opt/campusbite-kiosk/db/kiosk.db
+sqlite3 /opt/munchadda-kiosk/db/kiosk.db
 sqlite> SELECT count(*) FROM token_cache;
 sqlite> SELECT count(*) FROM sync_queue WHERE sync_status='pending';
 ```
@@ -225,7 +225,7 @@ sqlite> SELECT count(*) FROM sync_queue WHERE sync_status='pending';
 ## 9. Staff Training (5-minute version)
 
 **What the kiosk does:**
-When a student shows their phone with the CampusBite order QR code, they hold
+When a student shows their phone with the MunchAdda order QR code, they hold
 it in front of the scanner (about 5–20 cm away). The screen turns green with
 a big number — that's the token number. Hand them the printed receipt and
 tell them to wait for their number to be called.
@@ -260,6 +260,6 @@ the Feed button once. The next scan will print normally.
 
 | File | Purpose |
 |------|---------|
-| `/opt/campusbite-kiosk/logs/kiosk.log` | Main application log |
-| `/opt/campusbite-kiosk/logs/update.log` | Auto-update cron log |
-| `/opt/campusbite-kiosk/db/kiosk.db` | SQLite: token cache + sync queue |
+| `/opt/munchadda-kiosk/logs/kiosk.log` | Main application log |
+| `/opt/munchadda-kiosk/logs/update.log` | Auto-update cron log |
+| `/opt/munchadda-kiosk/db/kiosk.db` | SQLite: token cache + sync queue |

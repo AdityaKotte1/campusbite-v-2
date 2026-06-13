@@ -1,4 +1,4 @@
-# CampusBite — Complete System Guide
+# MunchAdda — Complete System Guide
 
 Everything in one place. How the system works, what every screen looks like, how every workflow flows, who can do what, and how it all connects. Read this like a story.
 
@@ -25,7 +25,7 @@ Everything in one place. How the system works, what every screen looks like, how
 
 ## 1. The Big Picture
 
-CampusBite is a campus food ordering system built specifically for Indian colleges. Students order food from their phone, pay via UPI or card through Razorpay, and collect their order at the canteen by scanning a QR code at a self-service kiosk — which prints a numbered receipt. The kiosk sits at the canteen counter; the student hands the receipt to the staff and gets their food.
+MunchAdda is a campus food ordering system built specifically for Indian colleges. Students order food from their phone, pay via UPI or card through Razorpay, and collect their order at the canteen by scanning a QR code at a self-service kiosk — which prints a numbered receipt. The kiosk sits at the canteen counter; the student hands the receipt to the staff and gets their food.
 
 **Why this design:** The biggest problem in Indian college canteens is the counter queue. Everyone shows up at 12:30, lines pile up, staff can't match who ordered what, students argue. This system moves all the friction away from the counter. Students order from class, pay in advance, walk up, scan, get a numbered slip, hand it to the counter. Staff just reads the number and gives the food. No arguments, no cash, no queue.
 
@@ -90,7 +90,7 @@ On success: the form disappears and is replaced by a green checkmark, the messag
 
 **Login flow (`/login`):**
 
-Same card layout. Title: "Welcome back". Subtitle: "Sign in to your CampusBite account."
+Same card layout. Title: "Welcome back". Subtitle: "Sign in to your MunchAdda account."
 
 - Google button at top
 - "or" divider
@@ -378,7 +378,7 @@ QR code display showing:
 - Small instructional text: "Scan at the canteen kiosk"
 - "Order #CB-260610-001234" subtitle
 - **QR code canvas** — black and white QR code, approximately 240×240px
-  - QR content: `campusbite://qr/{token_uuid}` (not readable by generic QR apps — only the kiosk scanner knows this scheme)
+  - QR content: `munchadda://qr/{token_uuid}` (not readable by generic QR apps — only the kiosk scanner knows this scheme)
   - Error correction level H (works even if screen is slightly smudged)
 - **Countdown timer** below the QR:
   - Shown as "Valid for 2h 45m 30s" in green pill
@@ -425,7 +425,7 @@ The QR auto-refreshes its token data every 60 seconds (in case it was just gener
   - "Cancel" and "Delete Account" (red) buttons
   - (Delete functionality: currently shows warning, implementation pending)
 
-**Version:** "CampusBite v0.1.0" in small grey text at the very bottom.
+**Version:** "MunchAdda v0.1.0" in small grey text at the very bottom.
 
 ---
 
@@ -435,7 +435,7 @@ The admin app is desktop-first. It has a persistent left sidebar and a main cont
 
 ### Sidebar Navigation
 
-Always visible on left side (desktop). Logo "CampusBite" at top.
+Always visible on left side (desktop). Logo "MunchAdda" at top.
 
 Navigation links (with icons):
 1. **Dashboard** — overview metrics
@@ -753,11 +753,11 @@ The kiosk is a completely headless Python program. No screen. No GUI. No keyboar
 
 1. Raspberry Pi powers on
 2. Pi OS Lite boots (takes ~30 seconds)
-3. systemd starts `campusbite-kiosk.service` (5 second delay after boot to let network settle)
+3. systemd starts `munchadda-kiosk.service` (5 second delay after boot to let network settle)
 4. Python loads `main.py`
-5. Logging initializes (rotating file log at `/opt/campusbite-kiosk/logs/kiosk.log`)
+5. Logging initializes (rotating file log at `/opt/munchadda-kiosk/logs/kiosk.log`)
 6. `KioskApp` loads `config/kiosk.yaml` (reads server URL, printer IDs, etc.)
-7. API key loaded from `CAMPUSBITE_API_KEY` environment variable (set in `/etc/campusbite-kiosk/secrets.env`)
+7. API key loaded from `MUNCHADDA_API_KEY` environment variable (set in `/etc/munchadda-kiosk/secrets.env`)
 8. SQLite database initializes at `db/kiosk.db` (creates tables if first run)
 9. Scanner thread starts (grabs the USB scanner device via evdev)
 10. Sync thread starts (runs every 30 seconds)
@@ -770,13 +770,13 @@ The physical flow:
 1. Student opens their order on the phone → QR Code tab
 2. Student holds the phone up to the scanner
 3. Scanner reads the QR code (it's an optical sensor — takes ~100ms)
-4. Scanner "types" the QR content as keystrokes: `campusbite://qr/550e8400-e29b-41d4-a716-446655440000` + Enter
+4. Scanner "types" the QR content as keystrokes: `munchadda://qr/550e8400-e29b-41d4-a716-446655440000` + Enter
 5. The kiosk Python app captures these keystrokes via evdev
 
 The software flow:
 1. Rate limiter check: max 60 scans/minute. If exceeded, ignored.
 2. Debounce check: if same scan came in within last 3 seconds, ignore (prevents double-scans).
-3. Prefix check: must start with `campusbite://qr/`. Anything else → error logged, nothing printed.
+3. Prefix check: must start with `munchadda://qr/`. Anything else → error logged, nothing printed.
 4. UUID format validation: the token after the prefix must match the UUID v4 pattern (`xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`). Invalid format → error logged, nothing printed.
 5. Online check: `GET https://your-app.vercel.app/api/health` with 3-second timeout.
 6. If online → online scan flow.
@@ -812,7 +812,7 @@ The software flow:
 58mm wide thermal paper, 32 characters per line:
 
 ```
-       CAMPUSBITE
+       MUNCHADDA
    Main Canteen
 ================================
            #042
@@ -940,7 +940,7 @@ This is the full lifecycle of one order, from phone to food:
     └─ Holds phone up to the scanner
 
 12. KIOSK SCANS QR
-    └─ Reads: campusbite://qr/550e8400-e29b-41d4-a716-446655440000
+    └─ Reads: munchadda://qr/550e8400-e29b-41d4-a716-446655440000
     └─ UUID validation
     └─ HMAC-signed POST to /api/v1/kiosk/scan
 
@@ -1205,7 +1205,7 @@ Student taps "Place Order"
 This is the most critical security feature. Here's why it works and how cheating is blocked:
 
 **What the QR contains:**
-`campusbite://qr/550e8400-e29b-41d4-a716-446655440000`
+`munchadda://qr/550e8400-e29b-41d4-a716-446655440000`
 
 Just a UUID. Nothing else. No order info, no price, no name. The UUID has 122 bits of randomness — guessing a valid one is computationally impossible (2^122 possibilities).
 

@@ -84,8 +84,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Use kiosk's own canteen_id if not specified or different
-  const canteenId = body.canteen_id ?? kiosk.canteen_id;
+  // SECURITY: the cache must ONLY ever return the authenticated kiosk's OWN
+  // canteen tokens. Never trust a client-supplied canteen_id — doing so would
+  // leak another canteen's live QR tokens.
+  const canteenId = kiosk.canteen_id;
 
   const now = new Date().toISOString();
 

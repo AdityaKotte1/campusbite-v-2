@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "online.innvera.campusbite.twa",
+      "package_name": "online.innvera.munchadda.twa",
       "sha256_cert_fingerprints": [
         "C5:18:AC:4A:4A:47:CC:2E:F0:5C:70:46:A0:BF:B3:11:7A:A2:BA:17:EE:14:2E:ED:F7:8A:C3:61:F9:6D:40:14"
       ]

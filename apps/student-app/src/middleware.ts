@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const PROTECTED_ROUTES = ['/orders', '/cart', '/profile', '/checkout'];
 const AUTH_ROUTES = ['/login', '/register'];
-const PUBLIC_ROUTES = ['/onboarding', '/api'];
+const PUBLIC_ROUTES = ['/onboarding', '/api', '/legal'];
 
 export async function middleware(request: NextRequest) {
   // Skip if Supabase is not configured (local dev without .env.local)

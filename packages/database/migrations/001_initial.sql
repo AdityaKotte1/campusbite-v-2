@@ -1,5 +1,5 @@
 -- ============================================================
--- CampusBite — Migration 001: Initial Schema
+-- MunchAdda — Migration 001: Initial Schema
 -- This migration runs the full initial setup in a single
 -- transaction: schema → RLS → functions.
 --

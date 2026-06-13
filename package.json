@@ -1,5 +1,5 @@
 {
-  "name": "campusbite",
+  "name": "munchadda",
   "private": true,
   "scripts": {
     "dev": "turbo run dev",

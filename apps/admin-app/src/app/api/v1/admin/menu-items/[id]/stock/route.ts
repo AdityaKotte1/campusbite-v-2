@@ -1,32 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import {
+  requireAdmin,
+  allowedCanteenIds,
+  canAccessCanteen,
+  forbidden,
+  notFound,
+  type CallerProfile,
+} from '@/lib/auth';
 
 // Staff AND admins can manage stock
-const STOCK_ROLES = ['super_admin', 'canteen_admin', 'staff'];
+const STOCK_ROLES = ['super_admin', 'canteen_admin', 'staff'] as const;
 
-async function authorise(supabase: ReturnType<typeof createClient>, service: ReturnType<typeof createServiceClient>) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { user: null, profile: null, error: 'UNAUTHORIZED' };
+/**
+ * Authenticate, enforce stock roles, then tenant-scope to the target item's
+ * canteen. allowedCanteenIds()/canAccessCanteen() already encode the rule:
+ * super_admin → any; canteen_admin → canteens in their institute; staff →
+ * their assigned canteen only.
+ */
+async function authoriseForItem(
+  itemId: string
+): Promise<
+  | { profile: CallerProfile; canteenId: string; response?: undefined }
+  | { profile?: undefined; canteenId?: undefined; response: NextResponse }
+> {
+  const { profile, response } = await requireAdmin([...STOCK_ROLES]);
+  if (response) return { response };
 
-  const { data: profile } = await service
-    .from('users')
-    .select('role, is_active')
-    .eq('id', user.id)
+  const service = createServiceClient();
+  const { data: item } = await service
+    .from('menu_items')
+    .select('id, canteen_id')
+    .eq('id', itemId)
     .single();
 
-  if (!profile || !STOCK_ROLES.includes(profile.role) || !profile.is_active) {
-    return { user, profile, error: 'FORBIDDEN' };
+  if (!item) return { response: notFound('Not found') };
+
+  const allowed = await allowedCanteenIds(profile);
+  if (!canAccessCanteen(item.canteen_id, allowed)) {
+    return { response: forbidden('Cannot manage stock for this item') };
   }
-  return { user, profile, error: null };
+
+  return { profile, canteenId: item.canteen_id };
 }
 
 // GET — return current stock info for one item
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const service = createServiceClient();
-  const { error } = await authorise(supabase, service);
-  if (error) return NextResponse.json({ success: false, error: { code: error } }, { status: error === 'UNAUTHORIZED' ? 401 : 403 });
+  const { response } = await authoriseForItem(params.id);
+  if (response) return response;
 
+  const service = createServiceClient();
   const { data, error: dbErr } = await service
     .from('menu_items')
     .select('id, name, stock_enabled, stock_count, is_available')
@@ -43,11 +66,10 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 //   { action: 'disable' }                  → disable stock tracking (unlimited)
 //   { action: 'toggle_available', is_available: bool } → manual toggle without touching stock
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const service = createServiceClient();
-  const { error: authErr } = await authorise(supabase, service);
-  if (authErr) return NextResponse.json({ success: false, error: { code: authErr } }, { status: authErr === 'UNAUTHORIZED' ? 401 : 403 });
+  const { response } = await authoriseForItem(params.id);
+  if (response) return response;
 
+  const service = createServiceClient();
   const body = await request.json();
   const { action } = body;
 

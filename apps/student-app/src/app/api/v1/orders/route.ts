@@ -1,8 +1,22 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { z } from 'zod';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { generateOrderNumber } from '@/lib/formatting';
 import { TAX_RATE } from '@/lib/constants';
 import { orderLimiter } from '@/lib/rate-limit';
+
+const orderItemSchema = z.object({
+  menu_item_id: z.string().uuid(),
+  quantity: z.number().int().positive().max(50),
+  special_note: z.string().max(500).optional().nullable(),
+});
+
+const createOrderSchema = z.object({
+  canteen_id: z.string().uuid(),
+  items: z.array(orderItemSchema).min(1).max(50),
+  special_instructions: z.string().max(1000).optional().nullable(),
+  coupon_code: z.string().max(64).optional().nullable(),
+});
 
 export async function GET(request: Request) {
   try {
@@ -34,7 +48,7 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('[orders GET] DB error:', JSON.stringify(error));
-      return NextResponse.json({ error: 'database_error', message: error.message, detail: error.details }, { status: 500 });
+      return NextResponse.json({ error: 'database_error' }, { status: 500 });
     }
 
     return NextResponse.json({ data: data ?? [] });
@@ -53,7 +67,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'unauthorized', message: 'Not authenticated' }, { status: 401 });
     }
 
-    const limit = orderLimiter(user.id);
+    const limit = await orderLimiter(user.id);
     if (!limit.allowed) {
       return NextResponse.json(
         { success: false, error: { code: 'RATE_LIMITED', message: 'Too many order requests. Please wait.' } },
@@ -61,12 +75,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { canteen_id, items, special_instructions, coupon_code } = body;
-
-    if (!canteen_id || !items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'bad_request', message: 'Invalid order data' }, { status: 400 });
+    let rawBody: unknown;
+    try {
+      rawBody = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'bad_request', message: 'Invalid JSON' }, { status: 400 });
     }
+
+    // FIX: validate the request shape before any DB work.
+    const parsed = createOrderSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'validation_error', message: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+    const { canteen_id, items, special_instructions, coupon_code } = parsed.data;
 
     // Verify canteen exists and is open
     const { data: canteen, error: canteenErr } = await supabase
@@ -94,7 +118,7 @@ export async function POST(request: Request) {
     }
 
     // Fetch menu items (include stock fields)
-    const menuItemIds = items.map((i: { menu_item_id: string }) => i.menu_item_id);
+    const menuItemIds = items.map((i) => i.menu_item_id);
     const { data: menuItems, error: menuErr } = await supabase
       .from('menu_items')
       .select('id, name, price_paise, is_available, canteen_id, stock_enabled, stock_count')
@@ -102,7 +126,8 @@ export async function POST(request: Request) {
       .eq('canteen_id', canteen_id);
 
     if (menuErr) {
-      return NextResponse.json({ error: 'database_error', message: menuErr.message }, { status: 500 });
+      console.error('[orders POST] menu fetch error:', menuErr);
+      return NextResponse.json({ error: 'database_error' }, { status: 500 });
     }
 
     // Validate all items (availability + stock pre-check)
@@ -129,7 +154,7 @@ export async function POST(request: Request) {
 
     // Calculate totals
     let subtotalPaise = 0;
-    const orderItemsData = items.map((item: { menu_item_id: string; quantity: number; special_note?: string }) => {
+    const orderItemsData = items.map((item) => {
       const menuItem = menuItemMap.get(item.menu_item_id)!;
       const subtotal = menuItem.price_paise * item.quantity;
       subtotalPaise += subtotal;
@@ -145,30 +170,59 @@ export async function POST(request: Request) {
 
     const taxPaise = Math.round(subtotalPaise * TAX_RATE);
     let discountPaise = 0;
+    let claimedCouponId: string | null = null;
 
-    // Validate coupon
+    // Validate + atomically claim the coupon in a single locked DB call.
+    // claim_coupon (SECURITY DEFINER) enforces canteen scope, min-order, the
+    // GLOBAL usage_limit, and the per-user limit, and reserves a global slot —
+    // closing the unlimited-redemption and per-user-bypass holes. Called via
+    // the service client because it updates coupons.used_count, which students
+    // cannot write under RLS.
     if (coupon_code) {
-      const { data: coupon } = await supabase
-        .from('coupons')
-        .select('*')
-        .eq('code', coupon_code.toUpperCase())
-        .eq('is_active', true)
-        .lte('valid_from', new Date().toISOString())
-        .gte('valid_until', new Date().toISOString())
-        .single();
+      const svc = createServiceClient();
+      const { data: claim, error: claimErr } = await svc.rpc('claim_coupon', {
+        p_code: coupon_code,
+        p_user_id: user.id,
+        p_subtotal_paise: subtotalPaise,
+        p_canteen_id: canteen_id,
+      });
 
-      if (coupon && subtotalPaise >= coupon.min_order_paise) {
-        if (coupon.usage_limit === null || coupon.used_count < coupon.usage_limit) {
-          discountPaise =
-            coupon.discount_type === 'percentage'
-              ? Math.min(
-                  Math.round((subtotalPaise * coupon.discount_value) / 100),
-                  coupon.max_discount_paise ?? Infinity
-                )
-              : coupon.discount_value * 100;
-        }
+      if (claimErr) {
+        console.error('[orders POST] claim_coupon error:', claimErr);
+        return NextResponse.json(
+          { error: 'coupon_error', message: 'Could not apply this coupon. Please try again.' },
+          { status: 400 }
+        );
+      }
+
+      if (claim?.valid) {
+        discountPaise = claim.discount_paise ?? 0;
+        claimedCouponId = claim.coupon_id ?? null;
+      } else {
+        const messages: Record<string, string> = {
+          COUPON_NOT_FOUND: 'This coupon is invalid or has expired.',
+          NOT_APPLICABLE: 'This coupon is not valid for this canteen.',
+          ORDER_TOO_SMALL: 'Your order does not meet this coupon’s minimum.',
+          EXHAUSTED: 'This coupon is no longer available.',
+          USER_LIMIT: 'You have already used this coupon.',
+        };
+        return NextResponse.json(
+          {
+            error: 'coupon_invalid',
+            message: messages[claim?.error as string] ?? 'This coupon could not be applied.',
+          },
+          { status: 400 }
+        );
       }
     }
+
+    // If anything below fails after the coupon slot was reserved, hand the slot
+    // back so a failed order doesn't permanently consume a redemption.
+    const releaseCoupon = async () => {
+      if (claimedCouponId) {
+        await createServiceClient().rpc('release_coupon', { p_coupon_id: claimedCouponId });
+      }
+    };
 
     const totalPaise = Math.max(0, subtotalPaise + taxPaise - discountPaise);
     const orderNumber = generateOrderNumber();
@@ -193,7 +247,9 @@ export async function POST(request: Request) {
       .single();
 
     if (orderErr || !order) {
-      return NextResponse.json({ error: 'create_failed', message: orderErr?.message ?? 'Failed to create order' }, { status: 500 });
+      console.error('[orders POST] order create error:', orderErr);
+      await releaseCoupon();
+      return NextResponse.json({ error: 'create_failed' }, { status: 500 });
     }
 
     // Create order items
@@ -202,9 +258,11 @@ export async function POST(request: Request) {
       .insert(orderItemsData.map((item: Record<string, unknown>) => ({ ...item, order_id: order.id })));
 
     if (itemsErr) {
+      console.error('[orders POST] order items create error:', itemsErr);
       // Rollback order
       await supabase.from('orders').delete().eq('id', order.id);
-      return NextResponse.json({ error: 'items_create_failed', message: itemsErr.message }, { status: 500 });
+      await releaseCoupon();
+      return NextResponse.json({ error: 'items_create_failed' }, { status: 500 });
     }
 
     // Atomically decrement stock for each item that has stock tracking on
@@ -219,6 +277,7 @@ export async function POST(request: Request) {
         if (stockResult && !stockResult.success && stockResult.error === 'INSUFFICIENT_STOCK') {
           await supabase.from('order_items').delete().eq('order_id', order.id);
           await supabase.from('orders').delete().eq('id', order.id);
+          await releaseCoupon();
           return NextResponse.json({
             error: 'insufficient_stock',
             message: `${menuItem.name} just sold out. Please update your cart.`,
@@ -227,9 +286,22 @@ export async function POST(request: Request) {
       }
     }
 
-    // Update coupon usage
-    if (coupon_code && discountPaise > 0) {
-      await supabase.rpc('increment_coupon_usage', { coupon_code: coupon_code.toUpperCase() });
+    // Record the redemption (per-user enforcement counts these rows + audit).
+    // The global slot was already reserved atomically by claim_coupon above.
+    if (claimedCouponId) {
+      const { error: redemptionErr } = await createServiceClient()
+        .from('user_coupons')
+        .insert({
+          user_id: user.id,
+          coupon_id: claimedCouponId,
+          order_id: order.id,
+          discount_applied_paise: discountPaise,
+        });
+      if (redemptionErr) {
+        // Non-fatal: the order is valid and the discount already applied. Log
+        // for reconciliation rather than failing a paid-for order.
+        console.error('[orders POST] user_coupons insert error:', redemptionErr);
+      }
     }
 
     return NextResponse.json({ data: order }, { status: 201 });

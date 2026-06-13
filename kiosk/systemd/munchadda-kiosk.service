@@ -1,0 +1,23 @@
+[Unit]
+Description=MunchAdda Kiosk Application
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kiosk
+Group=kiosk
+WorkingDirectory=/opt/munchadda-kiosk
+EnvironmentFile=-/etc/munchadda-kiosk/secrets.env
+ExecStart=/opt/munchadda-kiosk/venv/bin/python /opt/munchadda-kiosk/main.py
+Restart=always
+RestartSec=10
+# App writes its own kiosk.log via RotatingFileHandler; systemd output goes to
+# the journal (journalctl -u munchadda-kiosk) to avoid a root-owned-file conflict.
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+ReadWritePaths=/opt/munchadda-kiosk/logs /opt/munchadda-kiosk/db
+
+[Install]
+WantedBy=multi-user.target

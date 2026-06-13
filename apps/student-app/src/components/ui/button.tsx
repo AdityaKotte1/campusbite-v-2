@@ -10,17 +10,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-brand text-white hover:bg-brand-dark shadow-md hover:shadow-lg',
+          'bg-brand text-white hover:bg-brand-dark shadow-warm hover:shadow-lg',
         secondary:
-          'bg-bg border border-border text-text hover:bg-border hover:border-border-2',
+          'bg-surface border border-border-2 text-text hover:bg-bg-2 hover:border-text-3',
         ghost:
-          'bg-transparent text-text-2 hover:bg-bg hover:text-text',
+          'bg-transparent text-text-2 hover:bg-bg-2 hover:text-text',
         outline:
-          'border-2 border-brand text-brand bg-transparent hover:bg-brand-pale',
+          'border border-brand text-brand bg-transparent hover:bg-brand-pale',
         danger:
           'bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg',
         'danger-outline':
-          'border-2 border-red-300 text-red-600 bg-transparent hover:bg-red-50',
+          'border border-red-300 text-red-600 bg-transparent hover:bg-red-50',
         success:
           'bg-green text-white hover:bg-green-dark shadow-md hover:shadow-lg',
       },
@@ -49,10 +49,22 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, loading, disabled, children, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button';
+    // With asChild, Radix Slot requires a single React element child — so we
+    // pass the child through untouched (no spinner injection, no disabled prop).
+    if (asChild) {
+      return (
+        <Slot
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          {...props}
+        >
+          {children}
+        </Slot>
+      );
+    }
 
     return (
-      <Comp
+      <button
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         disabled={disabled || loading}
@@ -60,7 +72,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
         {children}
-      </Comp>
+      </button>
     );
   }
 );

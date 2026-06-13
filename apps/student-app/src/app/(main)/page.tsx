@@ -2,11 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { ArrowRight, Store, Zap } from 'lucide-react';
+import { ArrowRight, Store, Sparkles, ChefHat } from 'lucide-react';
 import { useAuthStore } from '@/store/auth-store';
 import { CanteenCard } from '@/components/canteen/canteen-card';
 import { MenuItemCard } from '@/components/menu/menu-item-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import type { Canteen, MenuItem } from '@/types';
 
 async function fetchCanteens(): Promise<Canteen[]> {
@@ -53,36 +54,52 @@ export default function HomePage() {
   const firstName = user?.full_name?.split(' ')[0] ?? 'there';
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-4 pb-6 space-y-6">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-brand to-brand-light rounded-2xl p-5 text-white shadow-lg">
-        <div className="relative z-10">
-          <p className="text-sm font-medium opacity-90 mb-0.5">{greeting()},</p>
-          <h1 className="text-xl font-bold">{firstName}! 👋</h1>
-          <p className="text-sm mt-1 opacity-80">What are you craving today?</p>
-          <Link
-            href="/canteens"
-            className="mt-3 inline-flex items-center gap-1.5 bg-white text-brand text-sm font-semibold px-4 py-2 rounded-xl hover:bg-brand-pale transition-colors"
-          >
-            <Store className="w-4 h-4" />
-            Browse Canteens
-          </Link>
+    <div className="max-w-lg mx-auto px-4 pt-5 pb-6 space-y-7">
+      {/* Greeting */}
+      <header className="animate-fade-up">
+        <p className="eyebrow">{greeting()}</p>
+        <h1 className="font-display text-[2rem] leading-none font-semibold text-text mt-1.5">
+          Hey {firstName}.
+        </h1>
+        <div className="rule-amber mt-3.5" />
+        <p className="text-sm text-text-2 mt-3">What are you craving today?</p>
+      </header>
+
+      {/* Editorial hero CTA */}
+      <section
+        className="relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-sm bg-grain animate-fade-up"
+        style={{ animationDelay: '60ms' }}
+      >
+        <div className="relative z-10 max-w-[78%]">
+          <p className="eyebrow text-brand">Fresh from campus</p>
+          <h2 className="font-display text-[1.65rem] leading-tight font-semibold text-text mt-2">
+            Skip the queue.<br />Eat what&apos;s good today.
+          </h2>
+          <Button asChild size="md" className="mt-4">
+            <Link href="/canteens">
+              <Store className="w-4 h-4" />
+              Browse canteens
+            </Link>
+          </Button>
         </div>
-        {/* Decorative circles */}
-        <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white opacity-10" />
-        <div className="absolute -right-4 -bottom-12 w-40 h-40 rounded-full bg-white opacity-10" />
-      </div>
+        <ChefHat
+          className="absolute -right-4 -bottom-5 w-32 h-32 text-brand/10"
+          strokeWidth={1.25}
+        />
+      </section>
 
       {/* Canteens Section */}
       <section>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Store className="w-4 h-4 text-brand" />
-            <h2 className="text-base font-bold text-text">Canteens</h2>
+        <div className="flex items-end justify-between mb-3.5">
+          <div>
+            <p className="eyebrow">Where to eat</p>
+            <h2 className="font-display text-xl font-semibold text-text mt-0.5">
+              Canteens near you
+            </h2>
           </div>
           <Link
             href="/canteens"
-            className="flex items-center gap-1 text-sm text-brand font-medium hover:text-brand-dark transition-colors"
+            className="flex items-center gap-1 text-sm text-brand font-semibold hover:gap-1.5 transition-all pb-1"
           >
             See all <ArrowRight className="w-3.5 h-3.5" />
           </Link>
@@ -111,9 +128,14 @@ export default function HomePage() {
       {/* Featured Items Section */}
       {(featuredLoading || (featuredItems && featuredItems.length > 0)) && (
         <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Zap className="w-4 h-4 text-brand" />
-            <h2 className="text-base font-bold text-text">Featured Items</h2>
+          <div className="mb-3.5">
+            <p className="eyebrow flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-amber" />
+              Chef&apos;s picks
+            </p>
+            <h2 className="font-display text-xl font-semibold text-text mt-0.5">
+              Featured today
+            </h2>
           </div>
 
           {featuredLoading ? (

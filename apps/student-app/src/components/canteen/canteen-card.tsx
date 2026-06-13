@@ -16,20 +16,20 @@ export function CanteenCard({ canteen, className }: CanteenCardProps) {
     <Link href={`/menu/${canteen.id}`} className="block">
       <div
         className={cn(
-          'bg-white rounded-2xl border border-border overflow-hidden',
-          'hover:shadow-md hover:border-border-2 transition-all duration-200 active:scale-[0.99]',
+          'group bg-surface rounded-xl border border-border overflow-hidden',
+          'hover:shadow-lg hover:border-border-2 hover:-translate-y-0.5 transition-all duration-200 active:translate-y-0 active:scale-[0.99]',
           className
         )}
       >
         <div className="flex gap-0">
           {/* Image */}
-          <div className="relative w-28 h-28 flex-shrink-0">
+          <div className="relative w-28 h-28 flex-shrink-0 overflow-hidden">
             {canteen.image_url ? (
               <Image
                 src={canteen.image_url}
                 alt={canteen.name}
                 fill
-                className="object-cover"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
                 sizes="112px"
               />
             ) : (
@@ -42,19 +42,25 @@ export function CanteenCard({ canteen, className }: CanteenCardProps) {
           </div>
 
           {/* Info */}
-          <div className="flex-1 p-3 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="text-sm font-bold text-text leading-tight line-clamp-2">
+          <div className="flex-1 p-3.5 min-w-0">
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <h3 className="font-display text-[0.95rem] font-semibold text-text leading-tight line-clamp-2">
                 {canteen.name}
               </h3>
               <span
                 className={cn(
-                  'flex-shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                  'flex-shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full',
                   canteen.is_open
                     ? 'bg-green-light text-green-dark'
-                    : 'bg-gray-100 text-gray-500'
+                    : 'bg-bg-2 text-text-3'
                 )}
               >
+                <span
+                  className={cn(
+                    'w-1.5 h-1.5 rounded-full',
+                    canteen.is_open ? 'bg-green' : 'bg-text-3'
+                  )}
+                />
                 {canteen.is_open ? 'Open' : 'Closed'}
               </span>
             </div>
@@ -62,8 +68,8 @@ export function CanteenCard({ canteen, className }: CanteenCardProps) {
             {/* Rating */}
             {canteen.rating > 0 && (
               <div className="flex items-center gap-1 mb-1.5">
-                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                <span className="text-xs font-medium text-text">
+                <Star className="w-3 h-3 fill-amber text-amber" />
+                <span className="text-xs font-semibold text-text tabular-nums">
                   {canteen.rating.toFixed(1)}
                 </span>
                 {canteen.total_reviews > 0 && (

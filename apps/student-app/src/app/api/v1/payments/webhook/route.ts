@@ -64,8 +64,29 @@ export async function POST(request: Request) {
     switch (eventType) {
       case 'payment.captured': {
         if (!paymentEntity) break;
-        const orderId = notes?.order_id as string | undefined;
-        if (!orderId) break;
+
+        // SECURITY: bind the captured payment to the order before marking it
+        // paid. Load the order by its razorpay_order_id and require BOTH that it
+        // belongs to the canteen whose secret verified this event AND that the
+        // captured amount matches the order total. This prevents a forged
+        // payload (signed with one canteen's secret) from settling another
+        // canteen's order, or settling an order at an attacker-chosen amount.
+        const { data: capturedOrder } = await service
+          .from('orders')
+          .select('id, canteen_id, total_paise')
+          .eq('razorpay_order_id', paymentEntity.order_id)
+          .single();
+
+        if (!capturedOrder) {
+          return NextResponse.json({ error: 'order_not_found' }, { status: 400 });
+        }
+
+        if (
+          (canteenId && capturedOrder.canteen_id !== canteenId) ||
+          paymentEntity.amount !== capturedOrder.total_paise
+        ) {
+          return NextResponse.json({ error: 'payment_mismatch' }, { status: 400 });
+        }
 
         // Idempotent update — only if still pending
         await service
@@ -101,10 +122,33 @@ export async function POST(request: Request) {
       case 'refund.created': {
         const refundEntity = ((event.payload as Record<string, unknown>)?.refund as Record<string, unknown>)?.entity as Record<string, unknown> | undefined;
         if (!refundEntity) break;
+
+        // Resolve the order this refund belongs to. The previous code compared
+        // the order-id column to a PAYMENT id, so it never matched. Prefer the
+        // refund's notes.order_id (our orders PK, set when the Razorpay order was
+        // created); otherwise resolve via the payment_transactions row whose
+        // razorpay_payment_id matches the refund's payment_id.
+        const refundNotes = refundEntity.notes as Record<string, unknown> | undefined;
+        let orderId = refundNotes?.order_id as string | undefined;
+
+        if (!orderId) {
+          const paymentId = refundEntity.payment_id as string | undefined;
+          if (paymentId) {
+            const { data: txn } = await service
+              .from('payment_transactions')
+              .select('order_id')
+              .eq('razorpay_payment_id', paymentId)
+              .single();
+            orderId = txn?.order_id ?? undefined;
+          }
+        }
+
+        if (!orderId) break;
+
         await service
           .from('orders')
           .update({ payment_status: 'refunded', status: 'refunded' })
-          .eq('razorpay_order_id', refundEntity.payment_id);
+          .eq('id', orderId);
         break;
       }
 

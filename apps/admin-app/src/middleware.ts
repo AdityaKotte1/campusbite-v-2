@@ -91,19 +91,11 @@ export async function middleware(request: NextRequest) {
     }
 
     // Validate role and active status
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('users')
       .select('role, is_active')
       .eq('id', user.id)
       .single();
-
-    // Debug log — visible in admin-app terminal (remove after confirmed working)
-    console.log('[admin middleware]', {
-      path: pathname,
-      userId: user.id,
-      profile,
-      profileError: profileError?.message,
-    });
 
     if (
       !profile ||

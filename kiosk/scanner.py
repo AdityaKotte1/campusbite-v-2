@@ -16,7 +16,7 @@ log = logging.getLogger("scanner")
 # ---------------------------------------------------------------------------
 # evdev keycode → character mapping
 # Covers codes 2–57 (numbers + top-row symbols, letters, hyphen, period,
-# slash — everything needed to read a UUID-style campusbite:// URI).
+# slash — everything needed to read a UUID-style munchadda:// URI).
 # ---------------------------------------------------------------------------
 _KEYMAP_NORMAL: dict[int, str] = {
     # Number row (unshifted)

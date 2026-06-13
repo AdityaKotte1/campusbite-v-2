@@ -1,5 +1,5 @@
 -- ============================================================
--- CampusBite — Complete PostgreSQL Schema
+-- MunchAdda — Complete PostgreSQL Schema
 -- Run this in Supabase SQL editor (or via migration).
 -- All monetary values in paise (integer).
 -- All IDs are UUIDs (gen_random_uuid()).
@@ -232,8 +232,11 @@ CREATE TABLE IF NOT EXISTS kiosks (
   canteen_id          UUID NOT NULL REFERENCES canteens(id) ON DELETE CASCADE,
   name                TEXT NOT NULL,
   device_id           TEXT NOT NULL UNIQUE,
+  location            TEXT,                          -- e.g. "Block A Ground Floor"
   api_key_encrypted   TEXT NOT NULL,               -- AES-256 encrypted API key
   last_heartbeat      TIMESTAMPTZ,
+  heartbeat_data      JSONB,                        -- {printer_status, app_version, stats, reported_at}
+  firmware_version    TEXT,
   printer_config      JSONB,                        -- {enabled, paper_width_mm, copies, ...}
   offline_mode        BOOLEAN NOT NULL DEFAULT false,
   is_active           BOOLEAN NOT NULL DEFAULT true,

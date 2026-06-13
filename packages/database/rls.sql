@@ -1,19 +1,46 @@
 -- ============================================================
--- CampusBite — Row Level Security (RLS) Policies
+-- MunchAdda — Row Level Security (RLS) Policies
 -- Idempotent: safe to re-run at any time.
 -- Run AFTER schema.sql.
 -- ============================================================
+-- SECURITY HARDENING (see security-hardening.sql for the single combined
+-- migration). Changes baked into this canonical file:
+--   * Helper functions now SET search_path = public (Fix 7).
+--   * Added current_user_institute_id() helper for tenant scoping.
+--   * UPDATE policies now pin canteen_id in WITH CHECK so rows cannot be
+--     re-parented to another tenant (Fix 6): categories, menu_items, orders,
+--     kiosks, staff, coupons, reviews.
+--   * audit_logs canteen_admin read policy removed — audit reads are now
+--     super_admin only (Fix 4).
+-- ============================================================
 
 -- Helper: current user's role
+-- SECURITY DEFINER + fixed search_path so it cannot be hijacked via a
+-- mutable search_path (Fix 7).
 CREATE OR REPLACE FUNCTION current_user_role()
-RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER AS $$
+RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT role FROM public.users WHERE id = auth.uid();
 $$;
 
 -- Helper: current user's assigned canteen ID
 CREATE OR REPLACE FUNCTION current_user_canteen_id()
-RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER AS $$
+RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT assigned_canteen_id FROM public.users WHERE id = auth.uid();
+$$;
+
+-- Helper: current user's institute ID.
+-- SECURITY DEFINER so it bypasses the users-table RLS (which only exposes the
+-- caller's own row) — needed by tenant-scoped policies (e.g. support tickets).
+CREATE OR REPLACE FUNCTION current_user_institute_id()
+RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT institute_id FROM public.users WHERE id = auth.uid();
+$$;
+
+-- Helper: institute ID for an arbitrary user (bypasses users RLS).
+-- Used to scope support tickets to the ticket owner's institute.
+CREATE OR REPLACE FUNCTION user_institute_id(p_user_id UUID)
+RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT institute_id FROM public.users WHERE id = p_user_id;
 $$;
 
 -- ============================================================
@@ -82,7 +109,11 @@ CREATE POLICY "categories_admin_update"
     current_user_role() IN ('canteen_admin', 'super_admin')
     AND (current_user_role() = 'super_admin' OR canteen_id = current_user_canteen_id())
   )
-  WITH CHECK (current_user_role() IN ('canteen_admin', 'super_admin'));
+  -- Fix 6: pin canteen_id so a canteen_admin cannot re-parent a category to another canteen.
+  WITH CHECK (
+    current_user_role() IN ('canteen_admin', 'super_admin')
+    AND (current_user_role() = 'super_admin' OR canteen_id = current_user_canteen_id())
+  );
 
 CREATE POLICY "categories_admin_delete"
   ON categories FOR DELETE
@@ -121,14 +152,19 @@ CREATE POLICY "menu_items_admin_insert"
   );
 
 -- Staff can update availability and stock; admins can update everything
+-- TODO (column-level): RLS cannot restrict staff to only availability/stock
+-- columns. Enforcing "staff may only change is_available/stock_count" needs a
+-- BEFORE UPDATE trigger or a dedicated RPC. For now we at least pin canteen_id.
 CREATE POLICY "menu_items_staff_update"
   ON menu_items FOR UPDATE
   USING (
     current_user_role() IN ('staff', 'canteen_admin', 'super_admin')
     AND (current_user_role() = 'super_admin' OR canteen_id = current_user_canteen_id())
   )
+  -- Fix 6: pin canteen_id so a row cannot be re-parented to another canteen.
   WITH CHECK (
     current_user_role() IN ('staff', 'canteen_admin', 'super_admin')
+    AND (current_user_role() = 'super_admin' OR canteen_id = current_user_canteen_id())
   );
 
 CREATE POLICY "menu_items_admin_delete"
@@ -214,7 +250,11 @@ CREATE POLICY "orders_canteen_admin_update"
     current_user_role() IN ('canteen_admin', 'staff')
     AND canteen_id = current_user_canteen_id()
   )
-  WITH CHECK (current_user_role() IN ('canteen_admin', 'staff'));
+  -- Fix 6: pin canteen_id so staff/admin cannot move an order to another canteen.
+  WITH CHECK (
+    current_user_role() IN ('canteen_admin', 'staff')
+    AND canteen_id = current_user_canteen_id()
+  );
 
 CREATE POLICY "orders_super_admin_all"
   ON orders FOR ALL
@@ -318,7 +358,11 @@ CREATE POLICY "kiosks_admin_update"
     current_user_role() = 'super_admin'
     OR (current_user_role() = 'canteen_admin' AND canteen_id = current_user_canteen_id())
   )
-  WITH CHECK (current_user_role() IN ('super_admin', 'canteen_admin'));
+  -- Fix 6: pin canteen_id so a canteen_admin cannot move a kiosk to another canteen.
+  WITH CHECK (
+    current_user_role() = 'super_admin'
+    OR (current_user_role() = 'canteen_admin' AND canteen_id = current_user_canteen_id())
+  );
 
 CREATE POLICY "kiosks_super_admin_delete"
   ON kiosks FOR DELETE USING (current_user_role() = 'super_admin');
@@ -415,7 +459,11 @@ CREATE POLICY "staff_admin_update"
     current_user_role() = 'super_admin'
     OR (current_user_role() = 'canteen_admin' AND canteen_id = current_user_canteen_id())
   )
-  WITH CHECK (current_user_role() IN ('super_admin', 'canteen_admin'));
+  -- Fix 6: pin canteen_id so a canteen_admin cannot reassign staff to another canteen.
+  WITH CHECK (
+    current_user_role() = 'super_admin'
+    OR (current_user_role() = 'canteen_admin' AND canteen_id = current_user_canteen_id())
+  );
 
 CREATE POLICY "staff_admin_delete"
   ON staff FOR DELETE
@@ -454,7 +502,13 @@ CREATE POLICY "coupons_admin_update"
     OR (current_user_role() = 'canteen_admin'
         AND (canteen_id = current_user_canteen_id() OR canteen_id IS NULL))
   )
-  WITH CHECK (current_user_role() IN ('super_admin', 'canteen_admin'));
+  -- Fix 6: pin canteen_id so a canteen_admin cannot re-parent a coupon to a
+  -- DIFFERENT canteen. NULL (platform-wide) is mirrored from USING.
+  WITH CHECK (
+    current_user_role() = 'super_admin'
+    OR (current_user_role() = 'canteen_admin'
+        AND (canteen_id = current_user_canteen_id() OR canteen_id IS NULL))
+  );
 
 CREATE POLICY "coupons_admin_delete"
   ON coupons FOR DELETE
@@ -521,7 +575,11 @@ CREATE POLICY "reviews_admin_all"
     current_user_role() = 'super_admin'
     OR (current_user_role() = 'canteen_admin' AND canteen_id = current_user_canteen_id())
   )
-  WITH CHECK (current_user_role() IN ('super_admin', 'canteen_admin'));
+  -- Fix 6: pin canteen_id so a canteen_admin cannot move a review to another canteen.
+  WITH CHECK (
+    current_user_role() = 'super_admin'
+    OR (current_user_role() = 'canteen_admin' AND canteen_id = current_user_canteen_id())
+  );
 
 -- ============================================================
 -- 19. LOYALTY POINTS
@@ -553,13 +611,11 @@ CREATE POLICY "audit_logs_own_read"
 CREATE POLICY "audit_logs_super_admin_read"
   ON audit_logs FOR SELECT USING (current_user_role() = 'super_admin');
 
--- Canteen admins see logs for their own canteen's entities
-CREATE POLICY "audit_logs_canteen_admin_read"
-  ON audit_logs FOR SELECT
-  USING (
-    current_user_role() = 'canteen_admin'
-    AND resource_type IN ('order', 'menu_item', 'category', 'review', 'coupon', 'staff', 'kiosk')
-  );
+-- Fix 4: the previous "audit_logs_canteen_admin_read" policy filtered only by
+-- resource_type and NOT by tenant, so any canteen_admin could read every
+-- tenant's audit rows. audit_logs has no canteen_id/institute_id column to scope
+-- on safely, so audit-log reads are now restricted to super_admin only.
+-- (Policy intentionally NOT recreated. DROP IF EXISTS above handles re-runs.)
 
 -- ============================================================
 -- 21. NOTIFICATIONS

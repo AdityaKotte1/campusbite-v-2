@@ -53,7 +53,8 @@ export async function POST(request: Request, { params }: Params) {
       .single();
 
     if (updateErr) {
-      return NextResponse.json({ error: 'update_failed', message: updateErr.message }, { status: 500 });
+      console.error('[orders cancel] update error:', updateErr);
+      return NextResponse.json({ error: 'update_failed' }, { status: 500 });
     }
 
     return NextResponse.json({ data: updated });

@@ -1,5 +1,5 @@
 -- ============================================================
--- CampusBite — PostgreSQL Functions & Triggers
+-- MunchAdda — PostgreSQL Functions & Triggers
 -- Run AFTER schema.sql and rls.sql.
 -- ============================================================
 
@@ -144,6 +144,7 @@ AS $$
 DECLARE
   v_token_row       qr_tokens%ROWTYPE;
   v_order_row       orders%ROWTYPE;
+  v_kiosk_canteen_id UUID;
   v_canteen_name    TEXT;
   v_student_name    TEXT;
   v_daily_number    INTEGER;
@@ -273,6 +274,26 @@ BEGIN
     FROM orders
    WHERE id = v_token_row.order_id
    FOR UPDATE;
+
+  -- SECURITY (Fix 8): the scanning kiosk must belong to the same canteen as the
+  -- order. Without this, a kiosk in canteen A could redeem an order placed for
+  -- canteen B. Roll the token back to 'active' so it can still be collected at
+  -- the correct canteen, and abort.
+  SELECT canteen_id INTO v_kiosk_canteen_id
+    FROM kiosks
+   WHERE id = p_kiosk_id;
+
+  IF v_kiosk_canteen_id IS DISTINCT FROM v_order_row.canteen_id THEN
+    UPDATE public.qr_tokens
+      SET status = 'active', used_at = NULL, kiosk_id = NULL
+    WHERE id = v_token_row.id;
+
+    RETURN jsonb_build_object(
+      'success',    false,
+      'error_code', 'WRONG_CANTEEN',
+      'message',    'This order belongs to a different canteen and cannot be collected at this kiosk'
+    );
+  END IF;
 
   -- SECURITY: Verify order is in a collectable state before proceeding
   IF v_order_row.status NOT IN ('confirmed', 'preparing', 'ready') THEN
@@ -753,6 +774,16 @@ CREATE TRIGGER trg_validate_qr_token_expiry
 -- ============================================================
 -- Atomic coupon validation and reservation
 -- Prevents race conditions when multiple users apply the same coupon
+--
+-- ⚠️  Fix 9 — NEEDS RECONCILIATION BEFORE USE. This function is NOT called by
+--     any application code today (only referenced in docs). It does not match
+--     the real `user_coupons` schema (schema.sql §16):
+--       * references a non-existent `user_coupons.is_used` column;
+--       * uses ON CONFLICT (user_id, coupon_id) but there is no UNIQUE
+--         constraint on (user_id, coupon_id) — the ON CONFLICT will error;
+--       * the real table also requires order_id (NOT NULL) which is not set here.
+--     Before wiring this up, reconcile the columns/constraints to schema.sql.
+--     The only behavioural fix applied now is the NULL valid_until bug below.
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.validate_and_reserve_coupon(
   p_code        TEXT,
@@ -773,7 +804,9 @@ BEGIN
    WHERE code = UPPER(p_code)
      AND is_active = true
      AND valid_from <= NOW()
-     AND valid_until >= NOW()
+     -- Fix 9: valid_until is nullable (NULL = no expiry). The old
+     -- `valid_until >= NOW()` silently excluded never-expiring coupons.
+     AND (valid_until IS NULL OR valid_until >= NOW())
    FOR UPDATE;
 
   IF NOT FOUND THEN

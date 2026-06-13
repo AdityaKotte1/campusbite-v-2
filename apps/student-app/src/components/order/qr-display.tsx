@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import { RefreshCw, Shield, AlertTriangle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { getCountdownFromNow } from '@/lib/formatting';
 import { cn } from '@/lib/utils';
 import type { QRToken } from '@/types';
@@ -77,7 +78,7 @@ export function QRDisplay({ orderId }: QRDisplayProps) {
     const canvas = canvasRef.current;
     if (!canvas || !token?.token) return;
 
-    const qrContent = `campusbite://qr/${token.token}`;
+    const qrContent = `munchadda://qr/${token.token}`;
 
     QRCode.toCanvas(canvas, qrContent, {
       errorCorrectionLevel: 'H',
@@ -103,14 +104,14 @@ export function QRDisplay({ orderId }: QRDisplayProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
         <AlertTriangle className="w-10 h-10 text-red-400 mb-3" />
-        <p className="text-sm font-semibold text-text mb-1">Failed to load QR code</p>
+        <p className="font-display font-semibold tracking-tight text-base text-text mb-1">Failed to load QR code</p>
         <p className="text-xs text-text-2 mb-4">{(error as Error).message}</p>
-        <button
+        <Button
           onClick={() => queryClient.invalidateQueries({ queryKey: ['qr-token', orderId] })}
-          className="px-4 py-2 bg-brand text-white rounded-xl text-sm font-semibold hover:bg-brand-dark transition-colors"
+          className="cursor-pointer"
         >
           Try Again
-        </button>
+        </Button>
       </div>
     );
   }
@@ -147,10 +148,10 @@ export function QRDisplay({ orderId }: QRDisplayProps) {
             <span className="text-sm font-semibold text-red-700">QR Code Expired</span>
           </div>
           <p className="text-xs text-text-2">Your QR has expired. Request a new one.</p>
-          <button
+          <Button
             onClick={() => regenerateMutation.mutate()}
             disabled={regenerateMutation.isPending}
-            className="flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl font-semibold text-sm hover:bg-brand-dark disabled:opacity-60 transition-colors"
+            className="cursor-pointer"
           >
             {regenerateMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -158,7 +159,7 @@ export function QRDisplay({ orderId }: QRDisplayProps) {
               <RefreshCw className="w-4 h-4" />
             )}
             Request New QR
-          </button>
+          </Button>
         </div>
       ) : (
         <>
@@ -171,8 +172,9 @@ export function QRDisplay({ orderId }: QRDisplayProps) {
                 : 'bg-green-light border-green/30'
             )}
           >
-            <p className={cn('text-xs font-medium mb-1', isUrgent ? 'text-red-600' : 'text-green-dark')}>
-              {isUrgent ? '⚠️ Expiring soon!' : 'QR Valid for'}
+            <p className={cn('flex items-center gap-1 text-xs font-medium mb-1', isUrgent ? 'text-red-600' : 'text-green-dark')}>
+              {isUrgent && <AlertTriangle className="w-3 h-3" />}
+              {isUrgent ? 'Expiring soon!' : 'QR Valid for'}
             </p>
             <div className="flex items-center gap-2">
               {[

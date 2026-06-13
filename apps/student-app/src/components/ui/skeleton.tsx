@@ -7,7 +7,7 @@ function Skeleton({ className, ...props }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'animate-pulse bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 bg-[length:200%_100%]',
+        'animate-pulse bg-gradient-to-r from-bg-2 via-border to-bg-2 bg-[length:200%_100%] rounded-md',
         className
       )}
       style={{
@@ -37,7 +37,7 @@ function SkeletonText({ lines = 1, className }: { lines?: number; className?: st
 
 function SkeletonCard({ className }: { className?: string }) {
   return (
-    <div className={cn('bg-white rounded-2xl border border-border p-4 space-y-3', className)}>
+    <div className={cn('bg-surface rounded-xl border border-border p-4 space-y-3', className)}>
       <Skeleton className="w-full h-32 rounded-xl" />
       <SkeletonText lines={2} />
       <div className="flex justify-between items-center">

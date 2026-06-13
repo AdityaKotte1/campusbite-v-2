@@ -1,64 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import {
+  requireAdmin,
+  allowedCanteenIds,
+  canAccessCanteen,
+  forbidden,
+  notFound,
+} from '@/lib/auth';
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+type RouteContext = { params: { id: string } };
+
+export async function GET(_: NextRequest, { params }: RouteContext) {
+  const { profile, response } = await requireAdmin();
+  if (response) return response;
 
   const service = createServiceClient();
-
-  // Verify admin role
-  const { data: profile, error: profileError } = await service
-    .from('users')
-    .select('role, is_active')
-    .eq('id', user.id)
-    .single();
-
-  const ADMIN_ROLES = ['super_admin', 'canteen_admin', 'staff'];
-  if (profileError || !profile || !ADMIN_ROLES.includes(profile.role) || !profile.is_active) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-      { status: 403 }
-    );
-  }
-
   const { data, error } = await service
     .from('menu_items')
     .select('*, categories(id, name), canteens(id, name)')
     .eq('id', params.id)
     .single();
 
-  if (error || !data) return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Not found' } }, { status: 404 });
+  if (error || !data) return notFound('Not found');
+
+  // Tenant scoping on the item's canteen.
+  const allowed = await allowedCanteenIds(profile);
+  if (!canAccessCanteen(data.canteen_id, allowed)) {
+    return forbidden('Cannot access this menu item');
+  }
+
   return NextResponse.json({ success: true, data });
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+export async function PUT(request: NextRequest, { params }: RouteContext) {
+  const { profile, response } = await requireAdmin(['super_admin', 'canteen_admin']);
+  if (response) return response;
 
-  const body = await request.json();
   const service = createServiceClient();
 
-  // Only admins can edit menu items; staff use the stock endpoint instead
-  const { data: profile, error: profileError } = await service
-    .from('users')
-    .select('role, is_active')
-    .eq('id', user.id)
+  // Load the item to enforce tenant scoping before mutating.
+  const { data: existing } = await service
+    .from('menu_items')
+    .select('id, canteen_id')
+    .eq('id', params.id)
     .single();
 
-  const EDIT_ROLES = ['super_admin', 'canteen_admin'];
-  if (profileError || !profile || !EDIT_ROLES.includes(profile.role) || !profile.is_active) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-      { status: 403 }
-    );
+  if (!existing) return notFound('Not found');
+
+  const allowed = await allowedCanteenIds(profile);
+  if (!canAccessCanteen(existing.canteen_id, allowed)) {
+    return forbidden('Cannot manage this menu item');
   }
+
+  const body = await request.json();
+
+  // Whitelist updatable fields only — never allow changing canteen_id.
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (body.name !== undefined) updates.name = body.name;
+  if (body.description !== undefined) updates.description = body.description || null;
+  if (body.price_paise !== undefined) updates.price_paise = body.price_paise;
+  if (body.category_id !== undefined) updates.category_id = body.category_id || null;
+  if (body.is_veg !== undefined) updates.is_veg = body.is_veg;
+  if (body.is_available !== undefined) updates.is_available = body.is_available;
+  if (body.image_url !== undefined) updates.image_url = body.image_url || null;
+  if (body.prep_time_minutes !== undefined) updates.prep_time_minutes = body.prep_time_minutes;
+  if (body.sort_order !== undefined) updates.sort_order = body.sort_order;
 
   const { data, error } = await service
     .from('menu_items')
-    .update({ ...body, updated_at: new Date().toISOString() })
+    .update(updates)
     .eq('id', params.id)
     .select()
     .single();
@@ -67,25 +77,23 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   return NextResponse.json({ success: true, data });
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+export async function DELETE(_: NextRequest, { params }: RouteContext) {
+  const { profile, response } = await requireAdmin(['super_admin', 'canteen_admin']);
+  if (response) return response;
 
   const service = createServiceClient();
 
-  const { data: profile, error: profileError } = await service
-    .from('users')
-    .select('role, is_active')
-    .eq('id', user.id)
+  const { data: existing } = await service
+    .from('menu_items')
+    .select('id, canteen_id')
+    .eq('id', params.id)
     .single();
 
-  const EDIT_ROLES = ['super_admin', 'canteen_admin'];
-  if (profileError || !profile || !EDIT_ROLES.includes(profile.role) || !profile.is_active) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-      { status: 403 }
-    );
+  if (!existing) return notFound('Not found');
+
+  const allowed = await allowedCanteenIds(profile);
+  if (!canAccessCanteen(existing.canteen_id, allowed)) {
+    return forbidden('Cannot manage this menu item');
   }
 
   const { error } = await service.from('menu_items').delete().eq('id', params.id);

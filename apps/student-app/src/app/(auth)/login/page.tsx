@@ -8,6 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Loader2, Mail, Lock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { loginSchema, type LoginInput } from '@/lib/validation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 function LoginInner() {
   const router = useRouter();
@@ -69,16 +71,22 @@ function LoginInner() {
   return (
     <>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text mb-1">Welcome back</h1>
-        <p className="text-text-2 text-sm">Sign in to your CampusBite account</p>
+        <p className="eyebrow text-brand mb-1.5">Welcome back</p>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-text mb-1.5">
+          Sign in to MunchAdda
+        </h1>
+        <div className="rule-amber mb-3" />
+        <p className="text-text-2 text-sm">Skip the queue. Pick up where you left off.</p>
       </div>
 
       {/* Google OAuth */}
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="lg"
         onClick={handleGoogleLogin}
         disabled={isOAuthLoading || isSubmitting}
-        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 border-border hover:border-brand hover:bg-brand-pale transition-all duration-150 text-text font-medium text-sm mb-5 disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full mb-5 cursor-pointer"
       >
         {isOAuthLoading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -103,7 +111,7 @@ function LoginInner() {
           </svg>
         )}
         {isOAuthLoading ? 'Redirecting...' : 'Continue with Google'}
-      </button>
+      </Button>
 
       {/* Divider */}
       <div className="relative mb-5">
@@ -111,7 +119,7 @@ function LoginInner() {
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="bg-white px-3 text-text-3">or sign in with email</span>
+          <span className="bg-surface px-3 text-text-3">or sign in with email</span>
         </div>
       </div>
 
@@ -136,76 +144,61 @@ function LoginInner() {
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-1.5">
-            Email address
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none" />
-            <input
-              {...register('email')}
-              type="email"
-              autoComplete="email"
-              placeholder="you@college.edu"
-              className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm transition-colors bg-white text-text placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand ${
-                errors.email
-                  ? 'border-red-400 bg-red-50'
-                  : 'border-border hover:border-border-2'
-              }`}
-            />
-          </div>
-          {errors.email && (
-            <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
-          )}
-        </div>
+        <Input
+          {...register('email')}
+          label="Email address"
+          type="email"
+          autoComplete="email"
+          placeholder="you@college.edu"
+          leftIcon={<Mail className="w-4 h-4" />}
+          error={errors.email?.message}
+        />
 
         {/* Password */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-sm font-medium text-text">Password</label>
+            <label htmlFor="login-password" className="block text-sm font-medium text-text-2">
+              Password
+            </label>
             <Link
               href="/forgot-password"
-              className="text-xs text-brand hover:text-brand-dark transition-colors"
+              className="text-xs text-brand hover:text-brand-dark transition-colors cursor-pointer"
             >
               Forgot password?
             </Link>
           </div>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none" />
-            <input
-              {...register('password')}
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              placeholder="Enter your password"
-              className={`w-full pl-10 pr-10 py-3 rounded-xl border text-sm transition-colors bg-white text-text placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand ${
-                errors.password
-                  ? 'border-red-400 bg-red-50'
-                  : 'border-border hover:border-border-2'
-              }`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((p) => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-3 hover:text-text-2 transition-colors"
-              tabIndex={-1}
-            >
-              {showPassword ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-          {errors.password && (
-            <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
-          )}
+          <Input
+            {...register('password')}
+            id="login-password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            placeholder="Enter your password"
+            leftIcon={<Lock className="w-4 h-4" />}
+            error={errors.password?.message}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword((p) => !p)}
+                className="text-text-3 hover:text-text-2 transition-colors cursor-pointer"
+                tabIndex={-1}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            }
+          />
         </div>
 
         {/* Submit */}
-        <button
+        <Button
           type="submit"
+          size="lg"
           disabled={isSubmitting || isOAuthLoading}
-          className="w-full py-3.5 px-4 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-sm transition-all duration-150 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+          className="w-full mt-1 cursor-pointer"
         >
           {isSubmitting ? (
             <>
@@ -215,7 +208,7 @@ function LoginInner() {
           ) : (
             'Sign in'
           )}
-        </button>
+        </Button>
       </form>
 
       {/* Register link */}

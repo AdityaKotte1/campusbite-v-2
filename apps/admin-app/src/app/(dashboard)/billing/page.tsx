@@ -75,7 +75,7 @@ export default function BillingPage() {
           key: order.key_id,
           amount: order.amount,
           currency: order.currency,
-          name: 'CampusBite',
+          name: 'MunchAdda',
           description: `${me?.institute?.name ?? 'Institute'} subscription (${cycle})`,
           order_id: order.order_id,
           theme: { color: '#E8390E' },
@@ -171,7 +171,7 @@ export default function BillingPage() {
         {!me.razorpay_enabled && (
           <p className="flex items-start gap-2 text-sm text-amber-dark bg-amber-pale border border-amber/25 rounded-lg px-3 py-2">
             <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <span>Online payment isn&apos;t enabled yet. Please contact CampusBite to activate.</span>
+            <span>Online payment isn&apos;t enabled yet. Please contact MunchAdda to activate.</span>
           </p>
         )}
 

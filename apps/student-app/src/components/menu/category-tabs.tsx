@@ -43,10 +43,10 @@ export function CategoryTabs({ categories, selectedId, onSelect }: CategoryTabsP
             data-category={category.id}
             onClick={() => handleSelect(category.id)}
             className={cn(
-              'flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150',
+              'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 cursor-pointer',
               isSelected
-                ? 'bg-brand text-white shadow-sm'
-                : 'bg-white border border-border text-text-2 hover:border-brand-light hover:text-brand'
+                ? 'bg-brand-pale text-brand border border-brand-light shadow-sm'
+                : 'bg-surface border border-border-2 text-text-2 hover:border-brand-light hover:text-brand'
             )}
           >
             {category.name}

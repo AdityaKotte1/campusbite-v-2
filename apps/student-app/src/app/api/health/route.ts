@@ -4,7 +4,7 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     timestamp: new Date().toISOString(),
-    service: 'campusbite-student-app',
+    service: 'munchadda-student-app',
     version: '0.1.0',
   });
 }

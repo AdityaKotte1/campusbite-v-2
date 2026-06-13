@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     // Fetch the order to get canteen_id (needed to resolve the right Razorpay secret)
     const { data: order, error: orderErr } = await supabase
       .from('orders')
-      .select('id, total_paise, user_id, payment_status, canteen_id')
+      .select('id, total_paise, user_id, payment_status, canteen_id, razorpay_order_id')
       .eq('id', order_id)
       .eq('user_id', user.id)
       .single();
@@ -60,12 +60,41 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    // Bind the verified payment to THIS order. A valid signature only proves the
+    // (razorpay_order_id, razorpay_payment_id) pair is authentic — not that it
+    // belongs to the order we're about to mark paid. Without this, a single valid
+    // triple from a cheap order could be replayed to settle any expensive order.
+    if (!order.razorpay_order_id || order.razorpay_order_id !== razorpay_order_id) {
+      return NextResponse.json({
+        error: 'order_mismatch',
+        message: 'Payment does not match this order',
+      }, { status: 400 });
+    }
+
     // Privileged writes: payment verification is a trusted server action, so use
     // the service-role client. The order owner has no UPDATE policy under RLS
     // (only canteen_admin/staff/super_admin do), so a user-context update would
     // silently affect 0 rows and the order would stay "awaiting payment".
     // Ownership was already enforced above via the user-context SELECT.
     const service = createServiceClient();
+
+    // Replay guard: a given razorpay_payment_id must settle at most one order.
+    // Even with the order-binding check above, reject if this payment id was
+    // already recorded as paid (defense-in-depth alongside the DB unique
+    // constraint being added separately).
+    const { data: existingTxn } = await service
+      .from('payment_transactions')
+      .select('id')
+      .eq('razorpay_payment_id', razorpay_payment_id)
+      .eq('status', 'paid')
+      .limit(1);
+
+    if (existingTxn && existingTxn.length > 0) {
+      return NextResponse.json({
+        error: 'payment_already_used',
+        message: 'This payment has already been processed',
+      }, { status: 409 });
+    }
 
     // Update order to paid + confirmed
     const { data: updated, error: updateErr } = await service
@@ -81,7 +110,8 @@ export async function POST(request: Request) {
       .select('id');
 
     if (updateErr) {
-      return NextResponse.json({ error: 'update_failed', message: updateErr.message }, { status: 500 });
+      console.error('[payments/verify] order update error:', updateErr);
+      return NextResponse.json({ error: 'database_error' }, { status: 500 });
     }
     if (!updated || updated.length === 0) {
       // Should not happen now that we use the service client, but fail loudly

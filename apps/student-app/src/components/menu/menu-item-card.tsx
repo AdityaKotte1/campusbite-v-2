@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Plus, Minus, Clock } from 'lucide-react';
+import { Plus, Minus, Clock, UtensilsCrossed } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { MenuItem } from '@/types';
 import { formatPrice, formatDuration } from '@/lib/formatting';
@@ -55,24 +55,24 @@ export function MenuItemCard({ item, disabled = false, className }: MenuItemCard
   return (
     <div
       className={cn(
-        'bg-white rounded-xl border border-border overflow-hidden flex flex-col',
+        'group bg-surface rounded-xl border border-border overflow-hidden flex flex-col transition-all duration-200 hover:shadow-lg hover:border-border-2',
         (!item.is_available || disabled) && 'opacity-60',
         className
       )}
     >
       {/* Image */}
-      <div className="relative w-full aspect-[4/3] bg-bg">
+      <div className="relative w-full aspect-[4/3] bg-bg-2 overflow-hidden">
         {item.image_url ? (
           <Image
             src={item.image_url}
             alt={item.name}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 640px) 50vw, 200px"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-3xl">
-            🍽️
+          <div className="w-full h-full flex items-center justify-center bg-amber-pale">
+            <UtensilsCrossed className="w-8 h-8 text-amber/60" strokeWidth={1.5} />
           </div>
         )}
 
@@ -127,7 +127,7 @@ export function MenuItemCard({ item, disabled = false, className }: MenuItemCard
 
         {/* Price + Add button */}
         <div className="flex items-center justify-between mt-auto">
-          <span className="text-sm font-bold text-text">
+          <span className="font-display text-base font-semibold text-text tabular-nums">
             {formatPrice(item.price_paise)}
           </span>
 

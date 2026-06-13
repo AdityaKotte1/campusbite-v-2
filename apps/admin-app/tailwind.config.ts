@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * CampusBite Admin — "Editorial Appetite" (work-mode variant).
+ * MunchAdda Admin — "Editorial Appetite" (work-mode variant).
  * Same warm token system as the student app, tuned denser for data UIs:
  * cream paper background, charcoal ink, appetite red-orange + amber accents.
  */

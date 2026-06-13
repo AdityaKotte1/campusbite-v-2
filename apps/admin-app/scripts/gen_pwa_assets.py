@@ -1,4 +1,4 @@
-"""Generate CampusBite ADMIN PWA icons + screenshots into public/.
+"""Generate MunchAdda ADMIN PWA icons + screenshots into public/.
 Dark theme so the installed icon is visually distinct from the student app.
 Run: python apps/admin-app/scripts/gen_pwa_assets.py
 """
@@ -48,7 +48,7 @@ def icon(size, maskable=False):
         d = ImageDraw.Draw(img)
     else:
         img, d = rounded(size)
-    centered(d, "CB", font(int(size * (0.30 if maskable else 0.36))), size / 2, size * 0.42)
+    centered(d, "MA", font(int(size * (0.30 if maskable else 0.36))), size / 2, size * 0.42)
     # small ADMIN wordmark in brand orange
     centered(d, "ADMIN", font(int(size * 0.12)), size / 2, size * 0.72, BRAND)
     return img
@@ -72,7 +72,7 @@ def screenshot_mobile():
     d = ImageDraw.Draw(img)
     # top bar
     d.rectangle([0, 0, W, 230], fill=SLATE)
-    d.text((60, 90), "CampusBite Admin", font=font(60), fill=WHITE)
+    d.text((60, 90), "MunchAdda Admin", font=font(60), fill=WHITE)
     # stat cards
     stats = [("Today's Orders", "342"), ("Revenue", "Rs.18,400"), ("Active Kiosks", "3")]
     y = 290
@@ -86,7 +86,7 @@ def screenshot_mobile():
     d.text((100, y + 36), "Recent Orders", font=font(42), fill=TEXT)
     ry = y + 120
     for i in range(6):
-        d.text((100, ry), f"CB-2606{i:02d}", font=font(34, False), fill=TEXT)
+        d.text((100, ry), f"MA-2606{i:02d}", font=font(34, False), fill=TEXT)
         d.text((W - 320, ry), "Rs.{}".format(40 + i * 15), font=font(34, False), fill=TEXT)
         d.rounded_rectangle([W - 220, ry - 4, W - 100, ry + 40], radius=16, fill=(220, 245, 230))
         d.text((W - 205, ry + 2), "paid", font=font(28, False), fill=(20, 130, 80))
@@ -100,7 +100,7 @@ def screenshot_wide():
     d = ImageDraw.Draw(img)
     # sidebar
     d.rectangle([0, 0, 300, H], fill=SLATE)
-    d.text((40, 50), "CampusBite", font=font(44), fill=WHITE)
+    d.text((40, 50), "MunchAdda", font=font(44), fill=WHITE)
     d.text((40, 110), "Admin", font=font(30, False), fill=BRAND)
     for i, item in enumerate(["Dashboard", "Orders", "Menu", "Kiosks", "Subscriptions", "Settings"]):
         d.text((40, 210 + i * 70), item, font=font(34, False), fill=(200, 205, 212) if i else WHITE)

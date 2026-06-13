@@ -22,7 +22,7 @@ export function ToastContainer() {
     ? <CheckCircle2 className="w-5 h-5 text-green flex-shrink-0" />
     : toast?.type === 'error'
     ? <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-    : <Info className="w-5 h-5 text-blue-500 flex-shrink-0" />;
+    : <Info className="w-5 h-5 text-amber flex-shrink-0" />;
 
   return (
     <ToastPrimitive.Provider swipeDirection="right" duration={TOAST_DURATION}>
@@ -31,16 +31,16 @@ export function ToastContainer() {
         onOpenChange={(open) => { if (!open) clearToast(); }}
         className={cn(
           'fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-sm',
-          'flex items-start gap-3 p-4 rounded-2xl shadow-xl border',
+          'flex items-start gap-3 p-4 rounded-xl shadow-lg border bg-surface',
           'data-[state=open]:animate-in data-[state=closed]:animate-out',
           'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
           'data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4',
           'transition-all duration-200',
           toast?.type === 'success'
-            ? 'bg-white border-green/30'
+            ? 'border-green/30'
             : toast?.type === 'error'
-            ? 'bg-white border-red-200'
-            : 'bg-white border-blue-200'
+            ? 'border-red-200'
+            : 'border-border-2'
         )}
       >
         {icon}
@@ -74,15 +74,15 @@ export function Toast({ message, type = 'info', onDismiss }: ToastProps) {
     ? <CheckCircle2 className="w-5 h-5 text-green flex-shrink-0" />
     : type === 'error'
     ? <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-    : <Info className="w-5 h-5 text-blue-500 flex-shrink-0" />;
+    : <Info className="w-5 h-5 text-amber flex-shrink-0" />;
 
   return (
     <div
       className={cn(
-        'flex items-start gap-3 p-4 rounded-2xl shadow-lg border',
-        type === 'success' ? 'bg-white border-green/30' : '',
-        type === 'error' ? 'bg-white border-red-200' : '',
-        type === 'info' ? 'bg-white border-blue-200' : ''
+        'flex items-start gap-3 p-4 rounded-xl shadow-lg border bg-surface',
+        type === 'success' ? 'border-green/30' : '',
+        type === 'error' ? 'border-red-200' : '',
+        type === 'info' ? 'border-border-2' : ''
       )}
     >
       {icon}

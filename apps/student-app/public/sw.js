@@ -1,10 +1,10 @@
-/* CampusBite service worker — dependency-free.
+/* MunchAdda service worker — dependency-free.
  * - Navigations: network-first, fall back to cache, then the offline page.
  * - Same-origin static assets (_next/static, images, fonts): stale-while-revalidate.
  * - NEVER caches API calls or cross-origin (Supabase, Razorpay) — those always
  *   hit the network so auth/payments/order data are never stale.
  */
-const CACHE = 'campusbite-v1';
+const CACHE = 'munchadda-v1';
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [OFFLINE_URL, '/manifest.json'];
 

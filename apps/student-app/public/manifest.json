@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "CampusBite — Campus Food Ordering",
-  "short_name": "CampusBite",
+  "name": "MunchAdda — Campus Food Ordering",
+  "short_name": "MunchAdda",
   "description": "Order food from your campus canteen — skip the queue, pay online, and pick up with a QR code.",
   "start_url": "/?source=pwa",
   "scope": "/",
@@ -33,7 +33,7 @@
       "sizes": "1920x1080",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "CampusBite — campus food ordering"
+      "label": "MunchAdda — campus food ordering"
     }
   ],
   "shortcuts": [

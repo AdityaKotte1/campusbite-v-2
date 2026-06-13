@@ -3,15 +3,18 @@ import { cn } from '@/lib/utils';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'elevated';
+  interactive?: boolean;
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = 'default', ...props }, ref) => (
+  ({ className, variant = 'default', interactive = false, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        'bg-white rounded-2xl border border-border overflow-hidden',
+        'bg-surface rounded-xl border border-border overflow-hidden transition-all duration-200',
         variant === 'elevated' && 'shadow-md',
+        interactive &&
+          'cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:border-border-2 active:translate-y-0 active:scale-[0.99]',
         className
       )}
       {...props}

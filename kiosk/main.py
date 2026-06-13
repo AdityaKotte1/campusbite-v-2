@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CampusBite Kiosk — Entry Point
+MunchAdda Kiosk — Entry Point
 Runs on Raspberry Pi 4 with 7" HDMI display, Honeywell 1450g scanner,
 and Xprinter XP-58IIH 58mm thermal printer.
 """
@@ -48,9 +48,9 @@ log = logging.getLogger("main")
 def _print_banner() -> None:
     banner = """
 ╔══════════════════════════════════════╗
-║         CAMPUSBITE KIOSK v1.0        ║
+║         MUNCHADDA KIOSK v1.0        ║
 ║   Campus Food Ordering Platform      ║
-║   github.com/campusbite/kiosk        ║
+║   github.com/munchadda/kiosk        ║
 ╚══════════════════════════════════════╝
 """
     for line in banner.strip().splitlines():
@@ -73,7 +73,7 @@ def main() -> None:
         log.exception("Fatal error in KioskApp.run(): %s", exc)
         sys.exit(1)
     finally:
-        log.info("CampusBite kiosk process exiting.")
+        log.info("MunchAdda kiosk process exiting.")
 
 
 if __name__ == "__main__":

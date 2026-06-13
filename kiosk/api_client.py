@@ -1,5 +1,5 @@
 """
-CampusBiteAPI — HMAC-signed HTTP client for the CampusBite backend.
+MunchAddaAPI — HMAC-signed HTTP client for the MunchAdda backend.
 
 Every request carries three authentication headers:
   X-Kiosk-ID          kiosk UUID from config
@@ -25,7 +25,7 @@ from urllib3.util.retry import Retry
 log = logging.getLogger("api_client")
 
 
-class CampusBiteAPI:
+class MunchAddaAPI:
     """Authenticated API client.  Thread-safe (requests.Session is not by
     default, so each method builds its own per-call headers)."""
 
@@ -38,12 +38,12 @@ class CampusBiteAPI:
         self.kiosk_id = config["kiosk"]["id"]
 
         # Prefer environment variable over config file (more secure)
-        self.api_key = os.environ.get('CAMPUSBITE_API_KEY') or config.get('kiosk', {}).get('api_key', '')
+        self.api_key = os.environ.get('MUNCHADDA_API_KEY') or config.get('kiosk', {}).get('api_key', '')
         if not self.api_key:
-            raise ValueError("CAMPUSBITE_API_KEY env var or kiosk.api_key config required")
-        if not os.environ.get('CAMPUSBITE_API_KEY') and config.get('kiosk', {}).get('api_key'):
+            raise ValueError("MUNCHADDA_API_KEY env var or kiosk.api_key config required")
+        if not os.environ.get('MUNCHADDA_API_KEY') and config.get('kiosk', {}).get('api_key'):
             log.warning(
-                "API key loaded from kiosk.yaml — consider using CAMPUSBITE_API_KEY env var instead"
+                "API key loaded from kiosk.yaml — consider using MUNCHADDA_API_KEY env var instead"
             )
 
         # Session with retry on transient HTTP errors

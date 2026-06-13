@@ -41,9 +41,9 @@ export function BottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-border">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-bg/85 backdrop-blur-xl border-t border-border">
       <div
-        className="max-w-lg mx-auto flex"
+        className="max-w-lg mx-auto flex px-2"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {NAV_ITEMS.map((item) => {
@@ -55,28 +55,30 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex-1 flex flex-col items-center justify-center py-2.5 gap-1',
-                'transition-all duration-150 active:scale-95',
+                'flex-1 flex flex-col items-center justify-center pt-2 pb-1.5 gap-1',
+                'transition-all duration-200 active:scale-90',
                 active ? 'text-brand' : 'text-text-3 hover:text-text-2'
               )}
               aria-current={active ? 'page' : undefined}
             >
-              {/* Icon with active indicator dot */}
-              <div className="relative">
+              {/* Icon inside an editorial pill when active */}
+              <div
+                className={cn(
+                  'flex items-center justify-center h-7 w-12 rounded-full transition-all duration-200',
+                  active ? 'bg-brand-pale' : 'bg-transparent'
+                )}
+              >
                 <Icon
                   className={cn(
                     'w-5 h-5 transition-all',
-                    active && 'stroke-[2.5]'
+                    active && 'stroke-[2.4]'
                   )}
                 />
-                {active && (
-                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-brand rounded-full" />
-                )}
               </div>
               <span
                 className={cn(
-                  'text-[10px] font-medium transition-all',
-                  active ? 'text-brand' : 'text-text-3'
+                  'text-[10px] tracking-wide transition-all',
+                  active ? 'font-semibold text-brand' : 'font-medium text-text-3'
                 )}
               >
                 {item.label}

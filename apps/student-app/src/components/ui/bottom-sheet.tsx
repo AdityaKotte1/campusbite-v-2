@@ -53,7 +53,7 @@ export function BottomSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px]"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[1px]"
             onClick={onClose}
           />
 
@@ -65,7 +65,7 @@ export function BottomSheet({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className={cn(
-              'fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl',
+              'fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-2xl shadow-lg border-t border-border',
               'max-h-[90vh] flex flex-col',
               className
             )}
@@ -73,19 +73,20 @@ export function BottomSheet({
             {/* Handle */}
             {showHandle && (
               <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-                <div className="w-10 h-1 bg-border-2 rounded-full" />
+                <div className="w-10 h-1.5 bg-border-2 rounded-full" />
               </div>
             )}
 
             {/* Header */}
             {title && (
               <div className="flex items-center justify-between px-5 py-3 border-b border-border flex-shrink-0">
-                <h2 className="text-base font-bold text-text">{title}</h2>
+                <h2 className="font-display font-semibold tracking-tight text-lg text-text">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-bg flex items-center justify-center hover:bg-border transition-colors"
+                  aria-label="Close"
+                  className="w-8 h-8 rounded-full bg-bg-2 flex items-center justify-center text-text-2 hover:bg-border hover:text-text transition-colors cursor-pointer"
                 >
-                  <X className="w-4 h-4 text-text-2" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             )}

@@ -1,6 +1,14 @@
 -- ============================================================
--- CampusBite: Run this in Supabase SQL Editor
+-- MunchAdda: Run this in Supabase SQL Editor
 -- Safe to run multiple times (IF NOT EXISTS / IF NOT EXISTS guards)
+-- ============================================================
+-- SECURITY HARDENING (Fix 2): the four "*_authenticated_read" policies below
+-- were defined as USING(true). Because permissive policies OR together, they
+-- nullified the is_active=true / is_available=true gating in rls.sql and let any
+-- logged-in user read inactive institutes/canteens/categories and unavailable
+-- menu items. They are now DROPPED and NOT recreated — the scoped policies in
+-- rls.sql (public_read on is_active/is_available + staff/admin policies) are the
+-- single source of truth. See also security-hardening.sql.
 -- ============================================================
 
 -- ──────────────────────────────────────────────────────────
@@ -127,11 +135,8 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
-DO $$ BEGIN
-  CREATE POLICY "institutes_authenticated_read" ON institutes
-    FOR SELECT TO authenticated USING (true);
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- Fix 2: dropped — USING(true) overrode the is_active gating from rls.sql.
+DROP POLICY IF EXISTS "institutes_authenticated_read" ON institutes;
 
 -- Canteens
 ALTER TABLE canteens ENABLE ROW LEVEL SECURITY;
@@ -142,11 +147,8 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
-DO $$ BEGIN
-  CREATE POLICY "canteens_authenticated_read" ON canteens
-    FOR SELECT TO authenticated USING (true);
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- Fix 2: dropped — USING(true) overrode the is_active gating from rls.sql.
+DROP POLICY IF EXISTS "canteens_authenticated_read" ON canteens;
 
 -- Categories
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
@@ -157,11 +159,8 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
-DO $$ BEGIN
-  CREATE POLICY "categories_authenticated_read" ON categories
-    FOR SELECT TO authenticated USING (true);
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- Fix 2: dropped — USING(true) overrode the is_active gating from rls.sql.
+DROP POLICY IF EXISTS "categories_authenticated_read" ON categories;
 
 -- Menu items
 ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
@@ -172,11 +171,8 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
-DO $$ BEGIN
-  CREATE POLICY "menu_items_authenticated_read" ON menu_items
-    FOR SELECT TO authenticated USING (true);
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- Fix 2: dropped — USING(true) overrode the is_available gating from rls.sql.
+DROP POLICY IF EXISTS "menu_items_authenticated_read" ON menu_items;
 
 -- ──────────────────────────────────────────────────────────
 -- 8. STORAGE BUCKET for menu item & canteen photos

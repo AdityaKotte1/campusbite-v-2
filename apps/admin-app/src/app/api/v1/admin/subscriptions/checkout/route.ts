@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: { code: 'NO_INSTITUTE', message: 'Your account is not linked to an institute' } }, { status: 400 });
   }
   if (!razorpayConfigured()) {
-    return NextResponse.json({ success: false, error: { code: 'PAYMENT_NOT_CONFIGURED', message: 'Subscription payments are not configured yet. Contact CampusBite.' } }, { status: 503 });
+    return NextResponse.json({ success: false, error: { code: 'PAYMENT_NOT_CONFIGURED', message: 'Subscription payments are not configured yet. Contact MunchAdda.' } }, { status: 503 });
   }
 
   const body = await request.json();

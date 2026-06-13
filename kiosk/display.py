@@ -74,7 +74,7 @@ ERROR_MESSAGES: dict[str, tuple[str, str, str]] = {
     "INVALID_QR": (
         "✗",
         "Invalid QR Code",
-        "This QR code is not valid.\nPlease use the CampusBite app.",
+        "This QR code is not valid.\nPlease use the MunchAdda app.",
     ),
 }
 
@@ -132,7 +132,7 @@ class KioskDisplay:
 
     def _setup(self) -> None:
         self.root = tk.Tk()
-        self.root.title("CampusBite Kiosk")
+        self.root.title("MunchAdda Kiosk")
 
         w = self.config.get("width", 800)
         h = self.config.get("height", 480)
@@ -245,7 +245,7 @@ class KioskDisplay:
         # Subtitle
         tk.Label(
             outer,
-            text="Open CampusBite app → My Orders → Show QR",
+            text="Open MunchAdda app → My Orders → Show QR",
             bg=bg, fg=COLOURS["text_muted"],
             font=self._fonts["medium_r"],
         ).grid(row=2, column=0, pady=(12, 0))
@@ -253,7 +253,7 @@ class KioskDisplay:
         # Bottom label
         tk.Label(
             outer,
-            text="campusbite.com",
+            text="munchadda.com",
             bg=bg, fg=COLOURS["text_muted"],
             font=self._fonts["small"],
         ).grid(row=3, column=0, sticky="n", pady=(20, 0))

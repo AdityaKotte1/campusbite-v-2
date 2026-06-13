@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, Circle, Clock, Package, Utensils, ShoppingBag } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Package, Utensils, ShoppingBag, RotateCcw, XCircle } from 'lucide-react';
 import type { Order, OrderStatus } from '@/types';
 import { formatDate } from '@/lib/formatting';
 import { cn } from '@/lib/utils';
@@ -75,32 +75,34 @@ export function OrderTracker({ order }: OrderTrackerProps) {
   const isTerminal = ['cancelled', 'payment_failed', 'refunded'].includes(order.status);
 
   return (
-    <div className="bg-white rounded-2xl border border-border p-4">
+    <div className="bg-surface rounded-2xl border border-border p-4">
       {/* Special states */}
       {isTerminal && (
         <div
           className={cn(
             'flex items-center gap-3 p-3 rounded-xl mb-4',
             order.status === 'refunded'
-              ? 'bg-purple-50 border border-purple-200'
+              ? 'bg-amber-pale border border-amber/30'
               : 'bg-red-50 border border-red-200'
           )}
         >
           <div
             className={cn(
               'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
-              order.status === 'refunded' ? 'bg-purple-100' : 'bg-red-100'
+              order.status === 'refunded' ? 'bg-amber-pale text-amber-dark' : 'bg-red-100 text-red-600'
             )}
           >
-            <span className="text-base">
-              {order.status === 'refunded' ? '↩️' : '✕'}
-            </span>
+            {order.status === 'refunded' ? (
+              <RotateCcw className="w-4 h-4" />
+            ) : (
+              <XCircle className="w-4 h-4" />
+            )}
           </div>
           <div>
             <p
               className={cn(
                 'text-sm font-semibold',
-                order.status === 'refunded' ? 'text-purple-700' : 'text-red-700'
+                order.status === 'refunded' ? 'text-amber-dark' : 'text-red-700'
               )}
             >
               {order.status === 'cancelled'
@@ -119,7 +121,7 @@ export function OrderTracker({ order }: OrderTrackerProps) {
       {/* Timeline */}
       <div className="relative">
         {/* Vertical line */}
-        <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-border" />
+        <div className="absolute left-4 top-4 bottom-4 w-px bg-border" />
 
         <div className="space-y-5">
           {TIMELINE_STEPS.map((step, index) => {
@@ -137,7 +139,7 @@ export function OrderTracker({ order }: OrderTrackerProps) {
                     state === 'current' &&
                       'bg-brand border-brand text-white shadow-md',
                     state === 'upcoming' &&
-                      'bg-white border-border text-text-3'
+                      'bg-surface border-border text-text-3'
                   )}
                 >
                   {state === 'completed' ? (
@@ -175,7 +177,7 @@ export function OrderTracker({ order }: OrderTrackerProps) {
                   {state === 'current' && order.estimated_ready_at && (
                     <div className="flex items-center gap-1 mt-1">
                       <Clock className="w-3 h-3 text-brand" />
-                      <span className="text-xs text-brand font-medium">
+                      <span className="text-xs text-brand font-medium tabular-nums">
                         Est. {formatDate(order.estimated_ready_at)}
                       </span>
                     </div>

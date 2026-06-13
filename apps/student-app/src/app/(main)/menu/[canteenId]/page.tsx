@@ -12,10 +12,12 @@ import {
   ShoppingCart,
   Leaf,
   Drumstick,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { CategoryTabs } from '@/components/menu/category-tabs';
 import { MenuItemCard } from '@/components/menu/menu-item-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { useCartTotalItems } from '@/store/cart-store';
 import { useUIStore } from '@/store/ui-store';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -88,8 +90,8 @@ export default function MenuPage({ params }: Props) {
         {canteenLoading ? (
           <Skeleton className="w-full h-40" />
         ) : (
-          <div className="relative w-full h-40 bg-gradient-to-r from-brand to-brand-light">
-            {canteen?.image_url && (
+          <div className="relative w-full h-40 bg-brand-pale">
+            {canteen?.image_url ? (
               <Image
                 src={canteen.image_url}
                 alt={canteen.name}
@@ -97,71 +99,85 @@ export default function MenuPage({ params }: Props) {
                 className="object-cover"
                 sizes="100vw"
               />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <UtensilsCrossed className="w-12 h-12 text-brand/40" strokeWidth={1.5} />
+              </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           </div>
         )}
 
         {/* Back button */}
         <button
           onClick={() => router.back()}
-          className="absolute top-3 left-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors"
+          aria-label="Go back"
+          className="absolute top-3 left-3 w-9 h-9 bg-surface/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-surface transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 text-text" />
         </button>
-
-        {/* Canteen info overlay */}
-        {canteen && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-            <div className="flex items-end justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <h1 className="text-lg font-bold leading-tight">{canteen.name}</h1>
-                <div className="flex items-center gap-3 mt-1 text-xs text-white/80">
-                  {canteen.rating > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      {canteen.rating.toFixed(1)}
-                      {canteen.total_reviews > 0 && ` (${canteen.total_reviews})`}
-                    </span>
-                  )}
-                  {canteen.opens_at && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {canteen.opens_at} – {canteen.closes_at}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <span
-                className={`flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                  canteen.is_open
-                    ? 'bg-green text-white'
-                    : 'bg-gray-600 text-white'
-                }`}
-              >
-                {canteen.is_open ? 'Open' : 'Closed'}
-              </span>
-            </div>
-          </div>
-        )}
       </div>
 
+      {/* Canteen info — premium editorial block */}
+      {canteen && (
+        <div className="bg-surface border-b border-border px-4 pt-4 pb-3 animate-fade-up">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="eyebrow">Menu</p>
+              <h1 className="font-display text-2xl font-semibold tracking-tight text-text leading-tight mt-0.5">
+                {canteen.name}
+              </h1>
+            </div>
+            <span
+              className={`flex-shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+                canteen.is_open
+                  ? 'bg-green-light text-green-dark'
+                  : 'bg-bg-2 text-text-3'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${canteen.is_open ? 'bg-green' : 'bg-text-3'}`} />
+              {canteen.is_open ? 'Open' : 'Closed'}
+            </span>
+          </div>
+          <div className="flex items-center gap-4 mt-2 text-text-2">
+            {canteen.rating > 0 && (
+              <span className="flex items-center gap-1">
+                <Star className="w-3.5 h-3.5 fill-amber text-amber" />
+                <span className="font-display text-sm font-semibold text-text tabular-nums">
+                  {canteen.rating.toFixed(1)}
+                </span>
+                {canteen.total_reviews > 0 && (
+                  <span className="text-xs text-text-3 tabular-nums">({canteen.total_reviews})</span>
+                )}
+              </span>
+            )}
+            {canteen.opens_at && (
+              <span className="flex items-center gap-1 text-xs text-text-3">
+                <Clock className="w-3.5 h-3.5" />
+                <span className="tabular-nums">{canteen.opens_at} – {canteen.closes_at}</span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Sticky filters section */}
-      <div className="sticky top-14 z-30 bg-bg pt-3 pb-2 px-4 space-y-2 border-b border-border shadow-sm">
+      <div className="sticky top-14 z-30 bg-bg pt-3 pb-3 px-4 space-y-2.5 border-b border-border shadow-sm">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none" />
-          <input
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none z-10" />
+          <Input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search items..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-white text-sm text-text placeholder:text-text-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand"
+            aria-label="Search menu items"
+            className="pl-10 pr-9 py-2.5"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-3 hover:text-text-2 text-lg leading-none"
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-3 hover:text-text-2 text-lg leading-none cursor-pointer z-10"
             >
               ×
             </button>
@@ -172,20 +188,20 @@ export default function MenuPage({ params }: Props) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setVegFilter(undefined)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-150 cursor-pointer ${
               vegFilter === undefined
-                ? 'bg-text text-white border-text'
-                : 'bg-white text-text-2 border-border'
+                ? 'bg-text text-white border-text shadow-sm'
+                : 'bg-surface text-text-2 border-border-2 hover:border-text-3'
             }`}
           >
             All
           </button>
           <button
             onClick={() => setVegFilter(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-150 cursor-pointer ${
               vegFilter === true
-                ? 'bg-green text-white border-green'
-                : 'bg-white text-text-2 border-border'
+                ? 'bg-green text-white border-green shadow-sm'
+                : 'bg-surface text-text-2 border-border-2 hover:border-green'
             }`}
           >
             <Leaf className="w-3 h-3" />
@@ -193,10 +209,10 @@ export default function MenuPage({ params }: Props) {
           </button>
           <button
             onClick={() => setVegFilter(false)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-150 cursor-pointer ${
               vegFilter === false
-                ? 'bg-red-600 text-white border-red-600'
-                : 'bg-white text-text-2 border-border'
+                ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                : 'bg-surface text-text-2 border-border-2 hover:border-red-400'
             }`}
           >
             <Drumstick className="w-3 h-3" />
@@ -229,8 +245,9 @@ export default function MenuPage({ params }: Props) {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-text-2 font-medium">No items found</p>
+          <div className="text-center py-12 bg-surface border border-border rounded-2xl px-6">
+            <UtensilsCrossed className="w-10 h-10 mx-auto mb-3 text-text-3 opacity-40" strokeWidth={1.5} />
+            <p className="font-display text-lg font-semibold text-text">No items found</p>
             <p className="text-text-3 text-sm mt-1">
               {debouncedSearch ? `No results for "${debouncedSearch}"` : 'No items in this category'}
             </p>
@@ -242,11 +259,12 @@ export default function MenuPage({ params }: Props) {
       {totalItems > 0 && (
         <button
           onClick={openCart}
-          className="fixed bottom-20 right-4 z-40 flex items-center gap-2 bg-brand text-white px-4 py-3 rounded-2xl shadow-xl hover:bg-brand-dark transition-all"
+          aria-label="View cart"
+          className="fixed bottom-20 right-4 z-40 flex items-center gap-2 bg-brand text-white px-4 py-3 rounded-2xl shadow-warm hover:bg-brand-dark hover:shadow-lg transition-all duration-150 cursor-pointer active:scale-[0.98]"
         >
           <ShoppingCart className="w-5 h-5" />
-          <span className="font-semibold text-sm">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
-          <span className="bg-white/20 px-2 py-0.5 rounded-xl text-xs">View Cart</span>
+          <span className="font-semibold text-sm tabular-nums">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
+          <span className="bg-white/20 px-2 py-0.5 rounded-xl text-xs font-medium">View Cart</span>
         </button>
       )}
     </div>

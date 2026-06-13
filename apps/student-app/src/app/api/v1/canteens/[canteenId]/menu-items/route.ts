@@ -16,6 +16,20 @@ export async function GET(request: Request, { params }: Params) {
 
     const supabase = createClient();
 
+    // Subscription gating: don't serve menu items for canteens whose institute's
+    // subscription has lapsed (mirrors the check in orders/route.ts). Resolve the
+    // canteen's institute and return an empty list if it isn't an active subscriber.
+    const { data: canteen } = await supabase
+      .from('canteens')
+      .select('id, institutes(is_active_subscriber)')
+      .eq('id', canteenId)
+      .single();
+
+    const inst = canteen?.institutes as unknown as { is_active_subscriber?: boolean } | null;
+    if (inst && inst.is_active_subscriber === false) {
+      return NextResponse.json({ data: [] });
+    }
+
     let query = supabase
       .from('menu_items')
       .select('*, category:categories(id, name)')
@@ -41,8 +55,9 @@ export async function GET(request: Request, { params }: Params) {
     const { data, error } = await query;
 
     if (error) {
+      console.error('[canteens menu-items] DB error:', error);
       return NextResponse.json(
-        { error: 'database_error', message: error.message },
+        { error: 'database_error' },
         { status: 500 }
       );
     }

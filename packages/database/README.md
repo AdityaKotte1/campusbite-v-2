@@ -1,6 +1,6 @@
-# CampusBite — Database Package
+# MunchAdda — Database Package
 
-This package contains all PostgreSQL schema definitions, RLS policies, and PL/pgSQL functions for the CampusBite platform running on Supabase.
+This package contains all PostgreSQL schema definitions, RLS policies, and PL/pgSQL functions for the MunchAdda platform running on Supabase.
 
 ## Files
 

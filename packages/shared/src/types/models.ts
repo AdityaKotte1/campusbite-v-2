@@ -1,5 +1,5 @@
 // ============================================================
-// CampusBite — Shared Domain Models
+// MunchAdda — Shared Domain Models
 // All monetary values are in paise (integer).
 // All IDs are UUIDs (string).
 // All timestamps are ISO 8601 strings.

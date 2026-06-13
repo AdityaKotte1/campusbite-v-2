@@ -19,10 +19,10 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: {
-    default: 'CampusBite Admin',
-    template: '%s | CampusBite Admin',
+    default: 'MunchAdda Admin',
+    template: '%s | MunchAdda Admin',
   },
-  description: 'CampusBite Admin Portal – Manage orders, menus, users and analytics.',
+  description: 'MunchAdda Admin Portal – Manage orders, menus, users and analytics.',
   robots: 'noindex, nofollow',
   manifest: '/manifest.json',
   appleWebApp: {

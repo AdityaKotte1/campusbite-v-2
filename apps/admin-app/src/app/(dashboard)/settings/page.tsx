@@ -241,7 +241,7 @@ function PaymentSettings() {
             <div>
               <p className="text-sm font-semibold text-text">Direct-to-Institute Payments</p>
               <p className="text-sm text-text-2 mt-0.5">
-                Configure each institute's Razorpay account so student payments go directly to them — CampusBite is never a middleman.
+                Configure each institute's Razorpay account so student payments go directly to them — MunchAdda is never a middleman.
                 Individual canteens can optionally use their own separate Razorpay account.
               </p>
               <div className="mt-3 text-xs text-text-3 space-y-1">
@@ -358,8 +358,8 @@ export default function SettingsPage() {
         <Card>
           <CardHeader><CardTitle className="font-display tracking-tight">General Settings</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <Field label="Platform Name" defaultValue="CampusBite" />
-            <Field label="Support Email" defaultValue="support@campusbite.in" type="email" />
+            <Field label="Platform Name" defaultValue="MunchAdda" />
+            <Field label="Support Email" defaultValue="support@munchadda.in" type="email" />
             <Field label="Timezone" defaultValue="Asia/Kolkata" />
             <Field label="Currency" defaultValue="INR" />
             <Button><Save className="w-4 h-4" /> Save Changes</Button>

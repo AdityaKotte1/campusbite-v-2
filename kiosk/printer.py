@@ -1,13 +1,11 @@
 """
-ThermalPrinter — wraps python-escpos for the Xprinter XP-58IIH (58mm).
+ThermalPrinter — wraps python-escpos for ESC/POS USB printers (e.g. Retsol RTP82,
+80mm). Line width comes from config `chars_per_line` (default below).
 
-Receipt layout (32 chars wide):
-  Header: logo text, canteen name
-  Token number in double-height/double-width
-  Order number, timestamp
-  Item lines
-  Subtotal, GST, Total
-  Footer instructions
+Compact receipt layout:
+  Header (Font A): MUNCHADDA, canteen name
+  Token number (Font A, double size) — the pickup number
+  Body (Font B, small): order no, time, items, subtotal/GST/total, footer
 """
 
 import logging
@@ -17,9 +15,20 @@ from typing import Optional
 
 log = logging.getLogger("printer")
 
-# 58mm paper at the standard 8 dots/mm = 384 dots wide.
-# At default font A (12×24 dots) → 32 characters per line.
+# Fallback character width for helper defaults.
 CHARS = 32
+
+# Receipt width in characters. Font B (forced via ESC ! 1 in _do_print) fits
+# ~42 columns across a 58mm printer. Hardcoded so a stale config can't change it.
+# If text fills only part of the paper, raise this; if any line wraps, lower it.
+RECEIPT_COLS = 42
+
+# Pixel width of the receipt image (image/watermark mode). Must match the
+# printer's real dot width or the bill won't fill the paper (too small → blank
+# on the right) — but must NOT exceed it, or the right edge gets cut off.
+# Measured for this printer at ~512. If a gap remains on the right, raise toward
+# 576; if the right edge is clipped, lower it.
+RECEIPT_IMG_WIDTH = 512
 
 
 def paise_to_rs(paise: int) -> str:
@@ -127,8 +136,16 @@ class ThermalPrinter:
                 return False
 
         try:
-            self._do_print(order_data)
-            return True
+            # Preferred: render the whole receipt as an image so we can draw the
+            # MUNCHADDA security watermark behind the text. Falls back to plain
+            # text mode if the printer can't do raster image printing.
+            try:
+                self._do_print_image(order_data)
+                return True
+            except Exception as img_exc:
+                log.warning("Image receipt failed (%s) — falling back to text mode.", img_exc)
+                self._do_print(order_data)
+                return True
         except Exception as exc:
             log.exception("print_receipt failed: %s", exc)
             # Try to reconnect for next time
@@ -138,40 +155,192 @@ class ThermalPrinter:
                 pass
             return False
 
-    def _do_print(self, d: dict) -> None:
-        p = self._printer
+    def _do_print_image(self, d: dict) -> None:
+        """Render the receipt as a bitmap with a faint diagonal MUNCHADDA
+        watermark, then print it as a raster image. Makes the bill look official
+        and hard to forge on plain paper."""
+        from PIL import Image, ImageDraw, ImageFont, ImageChops
 
-        # ------ Header ------
-        p.set(align="center", bold=True, double_height=False, double_width=False)
-        p.text("CAMPUSBITE\n")
-        p.set(align="center", bold=False)
-        canteen_name = d.get("canteen_name", "Campus Canteen")
-        # Wrap long canteen names
-        for line in textwrap.wrap(canteen_name, CHARS):
-            p.text(_center(line) + "\n")
+        width = RECEIPT_IMG_WIDTH
+        pad = 12   # horizontal (left/right) margin
+        vpad = 4   # top/bottom margin — kept tiny to minimise blank paper
 
-        # Offline badge (printed before divider)
-        if d.get("_offline_scan"):
-            p.set(align="center", bold=True)
-            p.text(_center("** OFFLINE SCAN **") + "\n")
-            p.set(bold=False)
+        def load(size: int, bold: bool = False):
+            base = "/usr/share/fonts/truetype/dejavu/"
+            name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
+            try:
+                return ImageFont.truetype(base + name, size)
+            except Exception:
+                return ImageFont.load_default()
 
-        p.text(_divider("=") + "\n")
+        f_title = load(34, bold=True)
+        f_head = load(22)
+        f_body = load(20)
+        f_bold = load(20, bold=True)
+        f_token = load(34, bold=True)
+        f_wm = load(46, bold=True)
 
-        # ------ Token number (large) ------
-        token_raw = d.get("token_number") or d.get("display_number", "")
-        token_str = f"#{int(token_raw):03d}" if str(token_raw).isdigit() else f"#{token_raw}"
+        # ── Build element list ─────────────────────────────────────────────
+        # ('center'|'left', text, font) | ('lr', left, right, font) | ('div',) | ('gap', px)
+        els: list = [("center", "MUNCHADDA", f_title)]
+        inst = self.config.get("institute_name", "")
+        if inst:
+            els.append(("center", str(inst), f_head))
+        canteen = d.get("canteen_name") or self.config.get("canteen_name", "Campus Canteen")
+        els.append(("center", str(canteen), f_head))
+        els.append(("div",))
 
-        p.set(align="center", double_height=True, double_width=True, bold=True)
-        p.text(token_str + "\n")
-        p.set(double_height=False, double_width=False, bold=False, align="left")
-
-        p.text(_divider("=") + "\n")
-
-        # ------ Order meta ------
+        name = d.get("student_name")
+        if name:
+            els.append(("left", "Name : " + str(name), f_body))
         order_num = d.get("order_number", "")
         if order_num:
-            p.text("Order: " + order_num + "\n")
+            els.append(("left", "Order: " + str(order_num), f_body))
+
+        scanned_at = d.get("scanned_at", "")
+        if scanned_at:
+            try:
+                dt = datetime.fromisoformat(str(scanned_at).replace("Z", "+00:00"))
+                time_str = dt.strftime("%-d %b %Y, %I:%M %p")
+            except Exception:
+                time_str = str(scanned_at)
+        else:
+            time_str = datetime.now().strftime("%-d %b %Y, %I:%M %p")
+        els.append(("left", "Time : " + time_str, f_body))
+        els.append(("div",))
+
+        for item in d.get("items", []):
+            label = f"{item.get('quantity', 1)}x {item.get('name', 'Item')}"
+            els.append(("lr", label, paise_to_rs(item.get("total_price_paise", 0)), f_body))
+        els.append(("div",))
+
+        subtotal = d.get("subtotal_paise", 0)
+        gst = d.get("tax_paise", d.get("gst_paise", 0))
+        total = d.get("total_paise", subtotal + gst)
+        pct = d.get("gst_percent", 5)
+        if subtotal:
+            els.append(("lr", "Subtotal", paise_to_rs(subtotal), f_body))
+        if gst:
+            els.append(("lr", f"GST ({pct:.0f}%)", paise_to_rs(gst), f_body))
+        els.append(("lr", "TOTAL", paise_to_rs(total), f_bold))
+        els.append(("div",))
+
+        if d.get("_offline_scan"):
+            els.append(("center", "** OFFLINE SCAN **", f_bold))
+        tok_raw = d.get("token_number") or d.get("display_number", "")
+        tok = f"#{int(tok_raw):03d}" if str(tok_raw).isdigit() else f"#{tok_raw}"
+        els.append(("gap", 6))
+        els.append(("center", "TOKEN " + tok, f_token))
+        els.append(("center", "Collect at counter", f_body))
+
+        # ── Measure height ─────────────────────────────────────────────────
+        def line_h(font) -> int:
+            b = font.getbbox("Ay")
+            return (b[3] - b[1]) + 8
+
+        height = vpad
+        for e in els:
+            if e[0] == "div":
+                height += 14
+            elif e[0] == "gap":
+                height += e[1]
+            else:
+                height += line_h(e[-1])
+        height += vpad
+
+        # ── Watermark layer (faint, diagonal, repeated) ────────────────────
+        img = Image.new("L", (width, height), 255)
+        wm = Image.new("L", (width, height), 255)
+        wd = ImageDraw.Draw(wm)
+        for i, yy in enumerate(range(-30, height, 110)):
+            xoff = (i % 2) * 130
+            for xx in range(-40 + xoff, width, 300):
+                wd.text((xx, yy), "MUNCHADDA", font=f_wm, fill=185)
+        wm = wm.rotate(18, expand=0, fillcolor=255)
+        img = ImageChops.darker(img, wm)
+
+        # ── Draw the receipt text on top ───────────────────────────────────
+        dr = ImageDraw.Draw(img)
+        y = vpad
+        for e in els:
+            if e[0] == "div":
+                dy = y + 6
+                x = pad
+                while x < width - pad:
+                    dr.line([(x, dy), (min(x + 6, width - pad), dy)], fill=0, width=1)
+                    x += 11
+                y += 14
+            elif e[0] == "gap":
+                y += e[1]
+            elif e[0] == "center":
+                _, text, font = e
+                tw = dr.textlength(text, font=font)
+                dr.text(((width - tw) // 2, y), text, font=font, fill=0)
+                y += line_h(font)
+            elif e[0] == "left":
+                _, text, font = e
+                dr.text((pad, y), text, font=font, fill=0)
+                y += line_h(font)
+            elif e[0] == "lr":
+                _, left, right, font = e
+                rw = dr.textlength(right, font=font)
+                dr.text((pad, y), left, font=font, fill=0)
+                dr.text((width - pad - rw, y), right, font=font, fill=0)
+                y += line_h(font)
+
+        # ── Print as 1-bit bitmap (dithering keeps the watermark faint) ─────
+        bw = img.convert("1")
+        self._printer.image(bw)
+        # No extra feed before the cut — cut() feeds only enough to clear the
+        # blade. This trims the trailing blank to the mechanical minimum.
+        if self.config.get("cut_after_print", True):
+            self._printer.cut()
+
+    def _do_print(self, d: dict) -> None:
+        p = self._printer
+        w = RECEIPT_COLS  # hardcoded full width; not from config (see constant above)
+
+        # Force the small Font B. python-escpos' set(font='b') sends ESC M, which
+        # this printer ignores; ESC ! 1 selects Font B on printers that honour it.
+        # python-escpos doesn't use ESC ! for bold/align, so this selection sticks.
+        try:
+            p._raw(b"\x1b\x21\x01")  # ESC ! 1 = Font B (condensed)
+        except Exception:
+            pass
+
+        # Whole receipt uses the small Font B. set() resets unspecified params
+        # (incl. font='a'), so every set() call re-asserts font='b'.
+        def line(text="", *, bold=False):
+            p.set(align="left", font="b", bold=bold)
+            p.text(text + "\n")
+
+        def centered(text, *, bold=False):
+            line(_center(text, w), bold=bold)
+
+        dash = _divider("-", w)
+
+        # ------ Header (all Font B, centred on the column grid) ------
+        centered("MUNCHADDA", bold=True)
+        institute = self.config.get("institute_name", "")
+        if institute:
+            for ln in textwrap.wrap(institute, w):
+                centered(ln)
+        canteen = d.get("canteen_name") or self.config.get("canteen_name", "Campus Canteen")
+        for ln in textwrap.wrap(canteen, w):
+            centered(ln)
+
+        if d.get("_offline_scan"):
+            centered("** OFFLINE SCAN **", bold=True)
+
+        line(dash)
+
+        # ------ Order meta ------
+        name = d.get("student_name")
+        if name:
+            line("Name : " + str(name))
+        order_num = d.get("order_number", "")
+        if order_num:
+            line("Order: " + order_num)
 
         scanned_at = d.get("scanned_at", "")
         if scanned_at:
@@ -182,70 +351,49 @@ class ThermalPrinter:
                 time_str = scanned_at
         else:
             time_str = datetime.now().strftime("%-d %b %Y, %I:%M %p")
-        p.text("Time:  " + time_str + "\n")
+        line("Time:  " + time_str)
 
-        p.text(_divider() + "\n")
+        line(dash)
 
         # ------ Items ------
-        p.set(bold=True)
-        p.text("ITEMS\n")
-        p.set(bold=False)
-
-        items = d.get("items", [])
-        for item in items:
+        for item in d.get("items", []):
             name = item.get("name", "Item")
             qty = item.get("quantity", 1)
-            total_paise = item.get("total_price_paise", 0)
-            price_str = paise_to_rs(total_paise)
+            price_str = paise_to_rs(item.get("total_price_paise", 0))
             label = f"{qty}x {name}"
-            line = _left_right(label, price_str)
-            # Wrap if name is very long
-            if len(label) > CHARS - len(price_str) - 1:
-                # Print name on first line, price right-aligned on second
-                p.text(label[:CHARS] + "\n")
-                p.text(_left_right("", price_str) + "\n")
+            if len(label) > w - len(price_str) - 1:
+                line(label[:w])
+                line(_left_right("", price_str, w))
             else:
-                p.text(line + "\n")
+                line(_left_right(label, price_str, w))
 
-        # Special instructions
         special = d.get("special_instructions", "").strip()
         if special:
-            p.text(_divider() + "\n")
-            p.set(bold=False)
-            p.text("Note: ")
-            for line in textwrap.wrap(special, CHARS - 6):
-                p.text(line + "\n")
+            line("Note: " + special[: w - 6])
 
-        p.text(_divider() + "\n")
+        line(dash)
 
         # ------ Totals ------
         subtotal_paise = d.get("subtotal_paise", 0)
-        gst_paise = d.get("gst_paise", 0)
+        gst_paise = d.get("tax_paise", d.get("gst_paise", 0))
         total_paise = d.get("total_paise", subtotal_paise + gst_paise)
         gst_pct = d.get("gst_percent", 5)
 
         if subtotal_paise:
-            p.text(_left_right("Subtotal", paise_to_rs(subtotal_paise)) + "\n")
+            line(_left_right("Subtotal", paise_to_rs(subtotal_paise), w))
         if gst_paise:
-            p.text(
-                _left_right(f"GST ({gst_pct:.0f}%)", paise_to_rs(gst_paise)) + "\n"
-            )
+            line(_left_right(f"GST ({gst_pct:.0f}%)", paise_to_rs(gst_paise), w))
+        line(_left_right("TOTAL", paise_to_rs(total_paise), w), bold=True)
 
-        p.text(_divider("=") + "\n")
-        p.set(bold=True)
-        p.text(_left_right("TOTAL", paise_to_rs(total_paise)) + "\n")
-        p.set(bold=False)
-        p.text(_divider("=") + "\n")
+        # ------ Token number (at the BOTTOM) ------
+        token_raw = d.get("token_number") or d.get("display_number", "")
+        token_str = f"#{int(token_raw):03d}" if str(token_raw).isdigit() else f"#{token_raw}"
+        line(dash)
+        centered("TOKEN  " + token_str, bold=True)
+        centered("Collect at counter")
 
-        # ------ Footer ------
-        p.set(align="center")
+        # Small feed so the cutter clears the last line, then cut.
         p.text("\n")
-        p.text(_center("Present this at counter") + "\n")
-        p.text(_center("to collect your order") + "\n")
-        p.text("\n\n")
-
-        # Cut paper
         if self.config.get("cut_after_print", True):
             p.cut()
-
-        p.set(align="left")
+        p.set(align="left", font="a")
