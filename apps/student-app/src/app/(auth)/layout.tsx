@@ -35,7 +35,7 @@ export default function AuthLayout({
           </svg>
         </div>
         <span className="font-display text-2xl font-semibold text-text tracking-tight">
-          Campus<span className="text-brand">Bite</span>
+          Munch<span className="text-brand">Adda</span>
         </span>
         <p className="text-sm text-text-2">Skip the queue. Get it fresh.</p>
       </div>
