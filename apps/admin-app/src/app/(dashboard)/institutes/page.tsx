@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import {
-  Plus, ChevronDown, ChevronRight, Pencil, PowerOff, Store,
+  Plus, ChevronDown, ChevronRight, Pencil, Power, PowerOff, Store,
   UserCheck, Loader2, Building2, Upload, ImageIcon, X,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -87,6 +87,15 @@ export default function InstitutesPage() {
     }
   };
 
+  const handleActivate = async (id: string) => {
+    try {
+      await axios.put(`/api/v1/admin/institutes/${id}`, { is_active: true });
+      queryClient.invalidateQueries({ queryKey: ['institutes'] });
+    } catch {
+      alert('Failed to activate institute.');
+    }
+  };
+
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['institutes'] });
     queryClient.invalidateQueries({ queryKey: ['canteens'] });
@@ -157,6 +166,7 @@ export default function InstitutesPage() {
                     onAssignAdmin={() => setAssignAdminFor(inst.id)}
                     onEdit={() => setEditInstitute(inst)}
                     onDeactivate={() => handleDeactivate(inst.id)}
+                    onActivate={() => handleActivate(inst.id)}
                   />
                 ))}
           </tbody>
@@ -205,6 +215,7 @@ function InstituteRows({
   onAssignAdmin,
   onEdit,
   onDeactivate,
+  onActivate,
 }: {
   institute: InstituteWithMeta;
   expanded: boolean;
@@ -213,6 +224,7 @@ function InstituteRows({
   onAssignAdmin: () => void;
   onEdit: () => void;
   onDeactivate: () => void;
+  onActivate: () => void;
 }) {
   const { data: canteensData, isLoading: canteensLoading } = useQuery<{ success: boolean; data: Canteen[] }>({
     queryKey: ['canteens', institute.id],
@@ -292,7 +304,7 @@ function InstituteRows({
             <Button variant="ghost" size="icon-sm" title="Edit" onClick={onEdit}>
               <Pencil className="w-3.5 h-3.5" />
             </Button>
-            {institute.is_active && (
+            {institute.is_active ? (
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -301,6 +313,16 @@ function InstituteRows({
                 onClick={onDeactivate}
               >
                 <PowerOff className="w-3.5 h-3.5" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="Activate"
+                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                onClick={onActivate}
+              >
+                <Power className="w-3.5 h-3.5" />
               </Button>
             )}
           </div>
