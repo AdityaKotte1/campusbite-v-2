@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 
   let query = service
     .from('orders')
-    .select('*, users(id, full_name, email, phone), canteens(id, name, code), order_items(*)', { count: 'exact' })
+    .select('*, user:users(id, full_name, email, phone), canteen:canteens(id, name, code), order_items(*)', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range((page - 1) * limit, page * limit - 1);
 

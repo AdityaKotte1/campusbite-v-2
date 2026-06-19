@@ -22,7 +22,7 @@ const ALL_NAV = [
   { href: '/users',      label: 'Users',      Icon: Users,           roles: ['super_admin', 'canteen_admin'] },
   { href: '/staff',      label: 'Staff',      Icon: UserCheck,       roles: ['super_admin', 'canteen_admin'] },
   { href: '/analytics',  label: 'Analytics',  Icon: BarChart3,       roles: ['super_admin', 'canteen_admin'] },
-  { href: '/kiosks',     label: 'Kiosks',     Icon: Monitor,         roles: ['super_admin', 'canteen_admin', 'staff'] },
+  { href: '/kiosks',     label: 'Kiosks',     Icon: Monitor,         roles: ['super_admin', 'canteen_admin'] },
   { href: '/support',    label: 'Support',    Icon: LifeBuoy,        roles: ['super_admin', 'canteen_admin', 'staff'] },
   { href: '/billing',    label: 'Billing',    Icon: CreditCard,      roles: ['canteen_admin'] },
   { href: '/settings',   label: 'Settings',   Icon: Settings,        roles: ['super_admin', 'canteen_admin'] },
@@ -48,7 +48,7 @@ export function Sidebar({ className }: { className?: string }) {
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0">
         <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shrink-0 shadow-warm">
-          <span className="text-white text-xs font-bold">CB</span>
+          <span className="text-white text-xs font-bold">MA</span>
         </div>
         {!sidebarCollapsed && (
           <span className="font-display text-lg font-semibold text-text truncate tracking-tight">

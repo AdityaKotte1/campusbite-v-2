@@ -15,7 +15,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   const service = createServiceClient();
   const { data, error } = await service
     .from('orders')
-    .select('*, users(id, full_name, email, phone), canteens(id, name, location), order_items(*)')
+    .select('*, user:users(id, full_name, email, phone), canteen:canteens(id, name, location), order_items(*)')
     .eq('id', params.id)
     .single();
 

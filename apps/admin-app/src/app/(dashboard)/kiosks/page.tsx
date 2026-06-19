@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { KioskStatusIndicator } from '@/components/kiosks/kiosk-status-indicator';
 import { RegisterKioskDialog } from '@/components/kiosks/register-kiosk-dialog';
+import { useAuthStore } from '@/store/auth-store';
 import type { Kiosk, Canteen } from '@/types';
 
 interface KioskWithCanteen extends Kiosk {
@@ -18,6 +19,9 @@ interface KioskWithCanteen extends Kiosk {
 export default function KiosksPage() {
   const [showRegister, setShowRegister] = useState(false);
   const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  const role = (user as { role?: string } | null)?.role ?? '';
+  const canManageKiosks = role === 'super_admin' || role === 'canteen_admin';
 
   const { data: kiosksData, isLoading } = useQuery<{ data: KioskWithCanteen[] }>({
     queryKey: ['kiosks'],
@@ -35,11 +39,13 @@ export default function KiosksPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex justify-end">
-        <Button onClick={() => setShowRegister(true)}>
-          <Plus className="w-4 h-4" /> Register Kiosk
-        </Button>
-      </div>
+      {canManageKiosks && (
+        <div className="flex justify-end">
+          <Button onClick={() => setShowRegister(true)}>
+            <Plus className="w-4 h-4" /> Register Kiosk
+          </Button>
+        </div>
+      )}
 
       <div className="bg-surface rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm">
