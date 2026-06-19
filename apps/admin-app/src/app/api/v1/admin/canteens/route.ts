@@ -34,6 +34,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Optional narrowing filter — applied ONLY for super_admin (see below).
+  // For canteen_admin/staff this param is ignored so it can never widen scope.
+  const instituteId = new URL(request.url).searchParams.get('institute_id');
+
   let query = service
     .from('canteens')
     .select('id, name, code, institute_id, is_active, location, building, floor, opens_at, closes_at, is_open, description')
@@ -50,11 +54,9 @@ export async function GET(request: NextRequest) {
     }
     query = query.eq('institute_id', profile.institute_id);
   } else {
-    // super_admin — optionally filter by ?institute_id=xxx
-    const { searchParams } = new URL(request.url);
-    const instituteIdFilter = searchParams.get('institute_id');
-    if (instituteIdFilter) {
-      query = query.eq('institute_id', instituteIdFilter);
+    // super_admin — unrestricted listing, optionally NARROWED by ?institute_id=xxx
+    if (instituteId) {
+      query = query.eq('institute_id', instituteId);
     }
   }
 
