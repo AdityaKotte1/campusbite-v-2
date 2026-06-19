@@ -9,6 +9,8 @@ import Link from 'next/link';
 import { DataTable } from '@/components/ui/data-table';
 import { OrderStatusBadge } from '@/components/orders/order-status-badge';
 import { StatusUpdateButton } from '@/components/orders/status-update-button';
+import { PrepBoard } from '@/components/orders/prep-board';
+import { ForecastBoard } from '@/components/orders/forecast-board';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrency, formatDateTime } from '@/lib/formatting';
@@ -206,6 +208,12 @@ export default function OrdersPage() {
           <Download className="w-4 h-4" />
           Export CSV
         </Button>
+      </div>
+
+      {/* Prep + Forecast boards */}
+      <div className="grid gap-5 md:grid-cols-2">
+        <PrepBoard canteenId={canteenId} />
+        <ForecastBoard canteenId={canteenId} />
       </div>
 
       {/* Table */}
