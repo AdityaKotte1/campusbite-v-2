@@ -120,6 +120,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Defense-in-depth: the QR scheme is munchadda://qr/{uuid}, so a valid token is
+  // ALWAYS a UUID. Reject anything else BEFORE it reaches the DB. The kiosk app
+  // already validates this, but the endpoint must not trust the client — anyone
+  // holding kiosk HMAC creds (or a tampered scanner) could POST an arbitrary
+  // string. The RPC is parameterised (no SQL injection), but this bounds input
+  // length and rejects injected/garbage payloads early.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(token)) {
+    return NextResponse.json(
+      { success: false, error_code: 'INVALID_TOKEN', message: 'Malformed QR token' },
+      { status: 400 }
+    );
+  }
+
+  // firmware_version is attacker-controllable and gets persisted — keep it sane.
+  const safeFirmware =
+    typeof firmware_version === 'string' && firmware_version.length <= 40
+      ? firmware_version
+      : null;
+
   // ─── 7b. Defense-in-depth: token's order must belong to THIS kiosk's canteen ─
   // Prevents kiosk A from redeeming canteen B's order QR even if the DB RPC
   // check were bypassed. We never mark a cross-canteen token collected.
@@ -162,7 +182,7 @@ export async function POST(request: NextRequest) {
     const { data: rpcData, error: rpcError } = await service.rpc('validate_and_use_qr_token', {
       p_token: token,
       p_kiosk_id: kioskId,
-      p_kiosk_meta: { firmware_version: firmware_version ?? null },
+      p_kiosk_meta: { firmware_version: safeFirmware },
     });
 
     if (rpcError) {
@@ -180,7 +200,7 @@ export async function POST(request: NextRequest) {
     .from('kiosks')
     .update({
       last_heartbeat: new Date().toISOString(),
-      ...(firmware_version ? { firmware_version } : {}),
+      ...(safeFirmware ? { firmware_version: safeFirmware } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('id', kioskId);
