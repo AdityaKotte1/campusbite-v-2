@@ -59,6 +59,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     .single();
   if (!target) return notFound('User not found');
 
+  // Security: super_admin accounts cannot be modified through this route by anyone.
+  if (target.role === 'super_admin') {
+    return forbidden('Super admin accounts cannot be modified from here');
+  }
+
   // Tenant scope: a canteen_admin can only act on users in their own institute.
   if (!canAccessInstitute(profile, target.institute_id)) {
     return forbidden('Cannot manage a user outside your institute');

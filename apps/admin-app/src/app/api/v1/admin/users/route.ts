@@ -69,6 +69,9 @@ export async function GET(request: NextRequest) {
     query = query.eq('is_active', isActive === 'true');
   }
 
+  // Security: super_admins are invisible to non-super-admin callers.
+  if (profile.role !== 'super_admin') query = query.neq('role', 'super_admin');
+
   const { data, error, count } = await query;
 
   if (error) {

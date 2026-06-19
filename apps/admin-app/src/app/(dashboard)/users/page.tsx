@@ -123,7 +123,8 @@ export default function UsersPage() {
     institutesMap[inst.id] = inst.name;
   });
 
-  const users = data?.data ?? [];
+  // Defense in depth: never render super_admins in the users table.
+  const users = (data?.data ?? []).filter((u) => u.role !== 'super_admin');
 
   const handleToggleActive = async (user: User) => {
     await axios.put(`/api/v1/admin/users/${user.id}`, { is_active: !user.is_active });
