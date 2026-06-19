@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { resolveCanteenScope, type CallerProfile } from '@/lib/auth';
 
 // ─── Auth helper ─────────────────────────────────────────────────────────────
 
@@ -7,7 +8,7 @@ async function getAdminProfile(userId: string) {
   const service = createServiceClient();
   const { data, error } = await service
     .from('users')
-    .select('role, is_active, institute_id, assigned_canteen_id')
+    .select('id, role, is_active, institute_id, assigned_canteen_id')
     .eq('id', userId)
     .single();
   return { profile: data, error };
@@ -18,7 +19,7 @@ async function getAdminProfile(userId: string) {
 // super_admin  → all staff
 // canteen_admin → staff in their institute (assigned_canteen_id belongs to their institute)
 
-export async function GET(_: NextRequest) {
+export async function GET(request: NextRequest) {
   const supabase = createClient();
   const {
     data: { user },
@@ -48,27 +49,23 @@ export async function GET(_: NextRequest) {
 
   const service = createServiceClient();
 
+  // Scope is a list of canteen ids; staff rows are matched by their
+  // assigned_canteen_id. Optional institute_id / canteen_id narrow within the
+  // caller's allowed scope (never widens). `[]` → zero rows.
+  const { searchParams } = new URL(request.url);
+  const scope = await resolveCanteenScope(profile as CallerProfile, {
+    instituteId: searchParams.get('institute_id'),
+    canteenId: searchParams.get('canteen_id'),
+  });
+
   let query = service
     .from('users')
     .select('id, email, full_name, avatar_url, role, institute_id, assigned_canteen_id, is_active, created_at, canteens:assigned_canteen_id(id, name, code)')
     .eq('role', 'staff')
     .order('created_at', { ascending: false });
 
-  if (profile.role === 'canteen_admin') {
-    if (!profile.institute_id) {
-      return NextResponse.json({ success: true, data: [] });
-    }
-    // Get canteen IDs in this institute
-    const { data: canteens } = await service
-      .from('canteens')
-      .select('id')
-      .eq('institute_id', profile.institute_id);
-
-    const canteenIds = (canteens ?? []).map((c: { id: string }) => c.id);
-    if (canteenIds.length === 0) {
-      return NextResponse.json({ success: true, data: [] });
-    }
-    query = query.in('assigned_canteen_id', canteenIds);
+  if (scope !== null) {
+    query = query.in('assigned_canteen_id', scope);
   }
 
   const { data, error } = await query;

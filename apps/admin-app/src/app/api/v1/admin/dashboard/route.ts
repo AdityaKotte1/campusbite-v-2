@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { resolveCanteenScope, type CallerProfile } from '@/lib/auth';
 import { startOfDay, subDays, format } from 'date-fns';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -13,7 +14,7 @@ export async function GET() {
 
   const { data: profile, error: profileError } = await service
     .from('users')
-    .select('role, is_active, institute_id, assigned_canteen_id')
+    .select('id, role, is_active, institute_id, assigned_canteen_id')
     .eq('id', user.id)
     .single();
 
@@ -25,22 +26,14 @@ export async function GET() {
     );
   }
 
-  // Determine allowed canteen IDs based on role
-  let allowedCanteenIds: string[] | null = null; // null = no restriction (super_admin)
-
-  if (profile.role === 'staff') {
-    allowedCanteenIds = profile.assigned_canteen_id ? [profile.assigned_canteen_id] : [];
-  } else if (profile.role === 'canteen_admin') {
-    if (profile.institute_id) {
-      const { data: canteens } = await service
-        .from('canteens')
-        .select('id')
-        .eq('institute_id', profile.institute_id);
-      allowedCanteenIds = (canteens ?? []).map((c: { id: string }) => c.id);
-    } else {
-      allowedCanteenIds = [];
-    }
-  }
+  // Determine in-scope canteen IDs, honoring optional narrowing filters.
+  // null = no restriction (super_admin, no filter); [] = nothing in scope.
+  // Never widens the caller's own allowed set.
+  const { searchParams } = new URL(request.url);
+  const allowedCanteenIds = await resolveCanteenScope(profile as CallerProfile, {
+    instituteId: searchParams.get('institute_id'),
+    canteenId: searchParams.get('canteen_id'),
+  });
 
   // If no canteens accessible, return empty stats
   if (allowedCanteenIds !== null && allowedCanteenIds.length === 0) {

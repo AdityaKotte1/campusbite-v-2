@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { resolveCanteenScope, type CallerProfile } from '@/lib/auth';
 
 async function getProfile(userId: string, service: ReturnType<typeof createServiceClient>) {
   return service
     .from('users')
-    .select('role, is_active, institute_id, assigned_canteen_id')
+    .select('id, role, is_active, institute_id, assigned_canteen_id')
     .eq('id', userId)
     .single();
 }
 
-export async function GET(_: NextRequest) {
+export async function GET(request: NextRequest) {
   const supabase = createClient();
   const {
     data: { user },
@@ -32,6 +33,12 @@ export async function GET(_: NextRequest) {
     );
   }
 
+  const { searchParams } = new URL(request.url);
+  const scope = await resolveCanteenScope(profile as CallerProfile, {
+    instituteId: searchParams.get('institute_id'),
+    canteenId: searchParams.get('canteen_id'),
+  });
+
   let query = service
     .from('menu_items')
     .select(
@@ -40,26 +47,10 @@ export async function GET(_: NextRequest) {
     .order('sort_order')
     .order('name');
 
-  if (profile.role === 'staff') {
-    if (!profile.assigned_canteen_id) {
-      return NextResponse.json({ success: true, data: [] });
-    }
-    query = query.eq('canteen_id', profile.assigned_canteen_id);
-  } else if (profile.role === 'canteen_admin') {
-    if (!profile.institute_id) {
-      return NextResponse.json({ success: true, data: [] });
-    }
-    const { data: canteens } = await service
-      .from('canteens')
-      .select('id')
-      .eq('institute_id', profile.institute_id);
-    const canteenIds = (canteens ?? []).map((c: { id: string }) => c.id);
-    if (canteenIds.length === 0) {
-      return NextResponse.json({ success: true, data: [] });
-    }
-    query = query.in('canteen_id', canteenIds);
+  // Restrict to in-scope canteens (never widens). `[]` → zero rows.
+  if (scope !== null) {
+    query = query.in('canteen_id', scope);
   }
-  // super_admin: no filter
 
   const { data, error } = await query;
 

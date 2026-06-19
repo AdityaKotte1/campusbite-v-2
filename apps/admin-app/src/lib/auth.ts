@@ -125,6 +125,36 @@ export function canAccessInstitute(
 }
 
 /**
+ * Final canteen-id restriction for a list query, honoring the caller's allowed
+ * scope AND optional narrowing filters (from the super_admin scope selector).
+ * Returns `null` = no restriction (super_admin, no filter). Returns `[]` = nothing
+ * in scope. NEVER widens: a non-super-admin's allowed set always bounds the result.
+ */
+export async function resolveCanteenScope(
+  profile: CallerProfile,
+  filters: { instituteId?: string | null; canteenId?: string | null }
+): Promise<string[] | null> {
+  const base = await allowedCanteenIds(profile); // null = unrestricted (super_admin)
+
+  // Compute the requested narrowing set (or null = no narrowing requested).
+  let requested: string[] | null = null;
+  if (filters.canteenId) {
+    requested = [filters.canteenId];
+  } else if (filters.instituteId) {
+    const service = createServiceClient();
+    const { data } = await service
+      .from('canteens')
+      .select('id')
+      .eq('institute_id', filters.instituteId);
+    requested = (data ?? []).map((c: { id: string }) => c.id);
+  }
+
+  if (requested === null) return base;          // no narrowing → caller's own scope
+  if (base === null) return requested;          // super_admin → exactly the requested set
+  return base.filter((id) => requested!.includes(id)); // intersect (never widens)
+}
+
+/**
  * Resolve a canteen's institute_id (for institute-level scoping of a canteen
  * resource). Returns null if the canteen does not exist.
  */

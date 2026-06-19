@@ -2,27 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { createServiceClient } from '@/lib/supabase/server';
 import { encryptApiKey } from '@/lib/encryption';
-import { requireAdmin, allowedCanteenIds, canAccessCanteen, forbidden } from '@/lib/auth';
+import { requireAdmin, allowedCanteenIds, canAccessCanteen, forbidden, resolveCanteenScope } from '@/lib/auth';
 
-export async function GET(_: NextRequest) {
+export async function GET(request: NextRequest) {
   const { profile, response } = await requireAdmin(['super_admin', 'canteen_admin']);
   if (response) return response;
 
   const service = createServiceClient();
 
   // Tenant scoping: super_admin (null) sees all; others only their canteens.
-  const allowed = await allowedCanteenIds(profile);
+  // Optional institute_id / canteen_id narrow within the caller's scope.
+  const { searchParams } = new URL(request.url);
+  const scope = await resolveCanteenScope(profile, {
+    instituteId: searchParams.get('institute_id'),
+    canteenId: searchParams.get('canteen_id'),
+  });
 
   let query = service
     .from('kiosks')
     .select('*, canteens(id, name, location)')
     .order('created_at', { ascending: false });
 
-  if (allowed !== null) {
-    if (allowed.length === 0) {
-      return NextResponse.json({ success: true, data: [] });
-    }
-    query = query.in('canteen_id', allowed);
+  // Restrict to in-scope canteens (never widens). `[]` → zero rows.
+  if (scope !== null) {
+    query = query.in('canteen_id', scope);
   }
 
   const { data, error } = await query;

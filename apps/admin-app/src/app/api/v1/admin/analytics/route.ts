@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { requireAdmin, allowedCanteenIds } from '@/lib/auth';
+import { requireAdmin, resolveCanteenScope } from '@/lib/auth';
 import { subDays, format } from 'date-fns';
 
 export async function GET(request: NextRequest) {
@@ -9,12 +9,17 @@ export async function GET(request: NextRequest) {
 
   const service = createServiceClient();
 
-  // Tenant scoping: null = super_admin (unrestricted); otherwise the set of
-  // canteens the caller may see. Service-role client bypasses RLS, so every
-  // order-based aggregate below MUST be scoped to these canteen IDs.
-  const allowed = await allowedCanteenIds(profile);
-
   const { searchParams } = new URL(request.url);
+
+  // Tenant scoping: null = super_admin (unrestricted, no filter); otherwise the
+  // set of in-scope canteens. Optional institute_id / canteen_id narrow within
+  // the caller's allowed scope (never widens). Service-role client bypasses
+  // RLS, so every order-based aggregate below MUST be scoped to these IDs.
+  const allowed = await resolveCanteenScope(profile, {
+    instituteId: searchParams.get('institute_id'),
+    canteenId: searchParams.get('canteen_id'),
+  });
+
   const days = parseInt(searchParams.get('days') ?? '30');
   const fromDate = format(subDays(new Date(), days), "yyyy-MM-dd'T'HH:mm:ssxxx");
 

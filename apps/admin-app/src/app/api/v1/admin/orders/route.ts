@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { resolveCanteenScope, type CallerProfile } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   const supabase = createClient();
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   // Verify role and get profile for scoping
   const { data: profile, error: profileError } = await service
     .from('users')
-    .select('role, is_active, institute_id, assigned_canteen_id')
+    .select('id, role, is_active, institute_id, assigned_canteen_id')
     .eq('id', user.id)
     .single();
 
@@ -34,39 +35,14 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get('page') ?? '1');
   const limit = parseInt(searchParams.get('limit') ?? '50');
 
-  // Determine which canteens this user can see
-  let allowedCanteenIds: string[] | null = null; // null = no restriction (super_admin)
-
-  if (profile.role === 'staff') {
-    if (!profile.assigned_canteen_id) {
-      return NextResponse.json({
-        success: true,
-        data: [],
-        pagination: { page, limit, total: 0, total_pages: 0 },
-      });
-    }
-    allowedCanteenIds = [profile.assigned_canteen_id];
-  } else if (profile.role === 'canteen_admin') {
-    if (!profile.institute_id) {
-      return NextResponse.json({
-        success: true,
-        data: [],
-        pagination: { page, limit, total: 0, total_pages: 0 },
-      });
-    }
-    const { data: canteens } = await service
-      .from('canteens')
-      .select('id')
-      .eq('institute_id', profile.institute_id);
-    allowedCanteenIds = (canteens ?? []).map((c: { id: string }) => c.id);
-    if (allowedCanteenIds.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: [],
-        pagination: { page, limit, total: 0, total_pages: 0 },
-      });
-    }
-  }
+  // Determine which canteens this user can see, honoring optional narrowing
+  // filters. `null` = no restriction (super_admin, no filter); `[]` = nothing
+  // in scope (the .in('canteen_id', []) below then yields zero rows).
+  const instituteId = searchParams.get('institute_id');
+  const scope = await resolveCanteenScope(profile as CallerProfile, {
+    instituteId,
+    canteenId,
+  });
 
   let query = service
     .from('orders')
@@ -74,16 +50,13 @@ export async function GET(request: NextRequest) {
     .order('created_at', { ascending: false })
     .range((page - 1) * limit, page * limit - 1);
 
-  // Apply role-based canteen restriction
-  if (allowedCanteenIds !== null) {
-    query = query.in('canteen_id', allowedCanteenIds);
+  // Apply the resolved canteen restriction (never widens the caller's scope).
+  if (scope !== null) {
+    query = query.in('canteen_id', scope);
   }
 
-  // Apply explicit filters (but only within the allowed scope)
+  // Apply explicit filters
   if (status) query = query.eq('status', status);
-  if (canteenId && (allowedCanteenIds === null || allowedCanteenIds.includes(canteenId))) {
-    query = query.eq('canteen_id', canteenId);
-  }
   if (dateFrom) query = query.gte('created_at', dateFrom);
   if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59');
   if (search) query = query.ilike('order_number', `%${search}%`);
