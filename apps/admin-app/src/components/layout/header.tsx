@@ -4,6 +4,7 @@ import { Bell, Menu, ChevronLeft } from 'lucide-react';
 import { useUIStore } from '@/store/ui-store';
 import { useAuthStore } from '@/store/auth-store';
 import { initials } from '@/lib/formatting';
+import { ScopeSelector } from './scope-selector';
 
 interface HeaderProps {
   title: string;
@@ -12,6 +13,7 @@ interface HeaderProps {
 export function Header({ title }: HeaderProps) {
   const { toggleSidebar, sidebarCollapsed, toggleCollapsed } = useUIStore();
   const { user } = useAuthStore();
+  const role = (useAuthStore((s) => s.user) as { role?: string } | null)?.role ?? '';
 
   return (
     <header className="h-16 bg-surface/80 backdrop-blur-xl border-b border-border flex items-center px-6 gap-4 shrink-0 sticky top-0 z-20">
@@ -35,6 +37,8 @@ export function Header({ title }: HeaderProps) {
       )}
 
       <h1 className="font-display text-xl font-semibold text-text flex-1 tracking-tight">{title}</h1>
+
+      {role === 'super_admin' && <ScopeSelector />}
 
       <div className="flex items-center gap-3">
         {/* Notifications */}
