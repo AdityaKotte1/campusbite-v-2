@@ -66,4 +66,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.forecast_canteen_demand(uuid, date) TO service_role, authenticated;
+GRANT EXECUTE ON FUNCTION public.forecast_canteen_demand(uuid, date) TO service_role;

@@ -16,7 +16,10 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency, formatDateTime } from '@/lib/formatting';
 import { ORDER_STATUS_LABELS } from '@/lib/constants';
 import { useScopeStore } from '@/store/scope-store';
+import { useAuthStore } from '@/store/auth-store';
 import type { Order, OrderStatus } from '@/types';
+
+type BoardCanteen = { id: string; name: string };
 
 const STATUS_OPTIONS = ['all', 'confirmed', 'preparing', 'ready', 'collected', 'cancelled', 'refunded'];
 
@@ -101,8 +104,29 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [boardCanteen, setBoardCanteen] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { instituteId, canteenId } = useScopeStore();
+  const user = useAuthStore((s) => s.user);
+  const role = (user as { role?: string } | null)?.role ?? '';
+
+  // Role-scoped canteens the caller can access. For staff this is just their
+  // assigned canteen; for canteen_admin their institute's canteens. super_admin
+  // uses the scope selector instead, so we only need this for non-super-admins.
+  const { data: canteensData } = useQuery<{ data: BoardCanteen[] }>({
+    queryKey: ['board-canteens'],
+    queryFn: () => axios.get('/api/v1/admin/canteens').then((r) => r.data),
+    enabled: role !== '' && role !== 'super_admin',
+  });
+  const canteens = canteensData?.data ?? [];
+
+  // Effective canteen the boards should display:
+  //   super_admin → the scope selector value (may be null → "select a canteen").
+  //   others      → explicit picker choice, or auto-select when only one canteen.
+  const effectiveBoardCanteen =
+    role === 'super_admin'
+      ? canteenId
+      : boardCanteen ?? (canteens.length === 1 ? canteens[0].id : null);
 
   const { data, isLoading } = useQuery<{ data: Order[] }>({
     queryKey: ['orders', statusFilter, dateFrom, dateTo, instituteId, canteenId],
@@ -211,9 +235,23 @@ export default function OrdersPage() {
       </div>
 
       {/* Prep + Forecast boards */}
+      {role !== 'super_admin' && canteens.length > 1 && (
+        <select
+          value={boardCanteen ?? ''}
+          onChange={(e) => setBoardCanteen(e.target.value || null)}
+          className="h-9 px-3 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand"
+        >
+          <option value="">Select a canteen…</option>
+          {canteens.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      )}
       <div className="grid gap-5 md:grid-cols-2">
-        <PrepBoard canteenId={canteenId} />
-        <ForecastBoard canteenId={canteenId} />
+        <PrepBoard canteenId={effectiveBoardCanteen} />
+        <ForecastBoard canteenId={effectiveBoardCanteen} />
       </div>
 
       {/* Table */}
