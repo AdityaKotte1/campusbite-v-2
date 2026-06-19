@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { KioskStatusIndicator } from '@/components/kiosks/kiosk-status-indicator';
 import { RegisterKioskDialog } from '@/components/kiosks/register-kiosk-dialog';
 import { useAuthStore } from '@/store/auth-store';
+import { useScopeStore } from '@/store/scope-store';
 import type { Kiosk, Canteen } from '@/types';
 
 interface KioskWithCanteen extends Kiosk {
@@ -20,18 +21,30 @@ export default function KiosksPage() {
   const [showRegister, setShowRegister] = useState(false);
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const { instituteId, canteenId } = useScopeStore();
   const role = (user as { role?: string } | null)?.role ?? '';
   const canManageKiosks = role === 'super_admin' || role === 'canteen_admin';
 
   const { data: kiosksData, isLoading } = useQuery<{ data: KioskWithCanteen[] }>({
-    queryKey: ['kiosks'],
-    queryFn: () => axios.get('/api/v1/admin/kiosks').then((r) => r.data),
+    queryKey: ['kiosks', instituteId, canteenId],
+    queryFn: async () => {
+      const params: Record<string, string> = {};
+      if (instituteId) params.institute_id = instituteId;
+      if (canteenId) params.canteen_id = canteenId;
+      const { data } = await axios.get('/api/v1/admin/kiosks', { params });
+      return data;
+    },
     refetchInterval: 30 * 1000,
   });
 
   const { data: canteensData } = useQuery<{ data: Canteen[] }>({
-    queryKey: ['canteens'],
-    queryFn: () => axios.get('/api/v1/admin/canteens').then((r) => r.data),
+    queryKey: ['canteens', instituteId],
+    queryFn: async () => {
+      const params: Record<string, string> = {};
+      if (instituteId) params.institute_id = instituteId;
+      const { data } = await axios.get('/api/v1/admin/canteens', { params });
+      return data;
+    },
   });
 
   const kiosks = kiosksData?.data ?? [];

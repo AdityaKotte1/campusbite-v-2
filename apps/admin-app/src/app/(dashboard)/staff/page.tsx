@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, initials } from '@/lib/formatting';
+import { useScopeStore } from '@/store/scope-store';
 import type { Canteen, User } from '@/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,17 +41,29 @@ export default function StaffPage() {
   const [filterCanteenId, setFilterCanteenId] = useState('');
   const [removingId, setRemovingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { instituteId, canteenId } = useScopeStore();
 
   // Fetch staff list
   const { data: staffData, isLoading: staffLoading } = useQuery<{ data: StaffUser[] }>({
-    queryKey: ['staff'],
-    queryFn: () => axios.get('/api/v1/admin/staff').then((r) => r.data),
+    queryKey: ['staff', instituteId, canteenId],
+    queryFn: async () => {
+      const params: Record<string, string> = {};
+      if (instituteId) params.institute_id = instituteId;
+      if (canteenId) params.canteen_id = canteenId;
+      const { data } = await axios.get('/api/v1/admin/staff', { params });
+      return data;
+    },
   });
 
   // Fetch canteens for the filter dropdown
   const { data: canteensData } = useQuery<{ data: Canteen[] }>({
-    queryKey: ['canteens'],
-    queryFn: () => axios.get('/api/v1/admin/canteens').then((r) => r.data),
+    queryKey: ['canteens', instituteId],
+    queryFn: async () => {
+      const params: Record<string, string> = {};
+      if (instituteId) params.institute_id = instituteId;
+      const { data } = await axios.get('/api/v1/admin/canteens', { params });
+      return data;
+    },
   });
 
   const staff = staffData?.data ?? [];

@@ -19,6 +19,7 @@ import { OrderStatusBadge } from '@/components/orders/order-status-badge';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrencyCompact, formatCurrency, formatDateTime } from '@/lib/formatting';
 import { useAuthStore } from '@/store/auth-store';
+import { useScopeStore } from '@/store/scope-store';
 import type { DashboardStats, RevenueDataPoint, Order, Canteen, Institute } from '@/types';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -44,12 +45,16 @@ interface CanteenWithStats extends Canteen {
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { instituteId, canteenId } = useScopeStore();
   const role = (user as { role?: string } | null)?.role;
 
   const { data, isLoading, error } = useQuery<DashboardData>({
-    queryKey: ['dashboard'],
+    queryKey: ['dashboard', instituteId, canteenId],
     queryFn: async () => {
-      const { data } = await axios.get('/api/v1/admin/dashboard');
+      const params: Record<string, string> = {};
+      if (instituteId) params.institute_id = instituteId;
+      if (canteenId) params.canteen_id = canteenId;
+      const { data } = await axios.get('/api/v1/admin/dashboard', { params });
       return data.data;
     },
     refetchInterval: 60 * 1000,

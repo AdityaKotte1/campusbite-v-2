@@ -21,6 +21,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatChartDate } from '@/lib/formatting';
+import { useScopeStore } from '@/store/scope-store';
 import type { AnalyticsData } from '@/types';
 
 const DAYS_OPTIONS = [
@@ -33,10 +34,17 @@ const PIE_COLORS = ['#DD3A11', '#1E8A5A', '#3B82F6', '#C17A16', '#8B5CF6'];
 
 export default function AnalyticsPage() {
   const [days, setDays] = useState(30);
+  const { instituteId, canteenId } = useScopeStore();
 
   const { data, isLoading } = useQuery<{ data: AnalyticsData }>({
-    queryKey: ['analytics', days],
-    queryFn: () => axios.get(`/api/v1/admin/analytics?days=${days}`).then((r) => r.data),
+    queryKey: ['analytics', days, instituteId, canteenId],
+    queryFn: async () => {
+      const params: Record<string, string> = { days: String(days) };
+      if (instituteId) params.institute_id = instituteId;
+      if (canteenId) params.canteen_id = canteenId;
+      const { data } = await axios.get('/api/v1/admin/analytics', { params });
+      return data;
+    },
   });
 
   const analytics = data?.data;

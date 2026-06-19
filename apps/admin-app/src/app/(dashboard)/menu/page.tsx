@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/formatting';
 import { useAuthStore } from '@/store/auth-store';
+import { useScopeStore } from '@/store/scope-store';
 import type { MenuItem, Category, Canteen } from '@/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -211,19 +212,31 @@ export default function MenuPage() {
 
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const { instituteId, canteenId } = useScopeStore();
   const userRole = (user as { role?: string })?.role ?? '';
   const isAdminOnly = ADMIN_ONLY_ROLES.includes(userRole);
 
   const { data: canteensData } = useQuery<{ data: Canteen[] }>({
-    queryKey: ['canteens'],
-    queryFn: () => axios.get('/api/v1/admin/canteens').then((r) => r.data),
+    queryKey: ['canteens', instituteId],
+    queryFn: async () => {
+      const params: Record<string, string> = {};
+      if (instituteId) params.institute_id = instituteId;
+      const { data } = await axios.get('/api/v1/admin/canteens', { params });
+      return data;
+    },
   });
 
   const { data: itemsData, isLoading: itemsLoading } = useQuery<{
     data: MenuItemWithStock[];
   }>({
-    queryKey: ['menu-items'],
-    queryFn: () => axios.get('/api/v1/admin/menu-items').then((r) => r.data),
+    queryKey: ['menu-items', instituteId, canteenId],
+    queryFn: async () => {
+      const params: Record<string, string> = {};
+      if (instituteId) params.institute_id = instituteId;
+      if (canteenId) params.canteen_id = canteenId;
+      const { data } = await axios.get('/api/v1/admin/menu-items', { params });
+      return data;
+    },
     enabled: tab === 'items',
     refetchInterval: 30_000,
   });

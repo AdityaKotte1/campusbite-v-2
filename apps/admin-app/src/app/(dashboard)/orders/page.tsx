@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrency, formatDateTime } from '@/lib/formatting';
 import { ORDER_STATUS_LABELS } from '@/lib/constants';
+import { useScopeStore } from '@/store/scope-store';
 import type { Order, OrderStatus } from '@/types';
 
 const STATUS_OPTIONS = ['all', 'payment_pending', 'confirmed', 'preparing', 'ready', 'collected', 'cancelled', 'refunded'];
@@ -99,14 +100,17 @@ export default function OrdersPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const queryClient = useQueryClient();
+  const { instituteId, canteenId } = useScopeStore();
 
   const { data, isLoading } = useQuery<{ data: Order[] }>({
-    queryKey: ['orders', statusFilter, dateFrom, dateTo],
+    queryKey: ['orders', statusFilter, dateFrom, dateTo, instituteId, canteenId],
     queryFn: async () => {
       const params: Record<string, string> = {};
       if (statusFilter !== 'all') params.status = statusFilter;
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
+      if (instituteId) params.institute_id = instituteId;
+      if (canteenId) params.canteen_id = canteenId;
       const { data } = await axios.get('/api/v1/admin/orders', { params });
       return data;
     },
