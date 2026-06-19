@@ -44,6 +44,9 @@ export async function GET(request: Request) {
       query = query.eq('status', status);
     }
 
+    // Hide unpaid orders from the student history listing (rows stay in the DB).
+    query = query.not('status', 'in', '("payment_pending","payment_failed")');
+
     const { data, error } = await query;
 
     if (error) {

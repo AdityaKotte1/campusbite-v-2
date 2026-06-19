@@ -34,7 +34,7 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
 
 export const CANCELLABLE_STATUSES = ['payment_pending'];
 
-export const ACTIVE_ORDER_STATUSES = ['payment_pending', 'confirmed', 'preparing', 'ready'];
+export const ACTIVE_ORDER_STATUSES = ['confirmed', 'preparing', 'ready'];
 
 export const TAX_RATE = 0.05; // 5% GST
 

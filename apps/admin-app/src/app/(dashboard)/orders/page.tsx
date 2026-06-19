@@ -18,7 +18,7 @@ import { ORDER_STATUS_LABELS } from '@/lib/constants';
 import { useScopeStore } from '@/store/scope-store';
 import type { Order, OrderStatus } from '@/types';
 
-const STATUS_OPTIONS = ['all', 'payment_pending', 'confirmed', 'preparing', 'ready', 'collected', 'cancelled', 'refunded'];
+const STATUS_OPTIONS = ['all', 'confirmed', 'preparing', 'ready', 'collected', 'cancelled', 'refunded'];
 
 function buildColumns(onUpdateStatus: (id: string, status: string) => Promise<void>): ColumnDef<Order>[] {
   return [

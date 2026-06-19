@@ -61,6 +61,10 @@ export async function GET(request: NextRequest) {
   if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59');
   if (search) query = query.ilike('order_number', `%${search}%`);
 
+  // Hide unpaid orders from the admin listing unconditionally — even an
+  // explicit ?status=payment_pending must return nothing (rows stay in the DB).
+  query = query.not('status', 'in', '("payment_pending","payment_failed")');
+
   const { data, error, count } = await query;
 
   if (error) {
