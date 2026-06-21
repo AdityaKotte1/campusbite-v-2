@@ -7,6 +7,9 @@ node_modules/
 out/
 build/
 dist/
+# kiosk PyInstaller build spec (committed, not a build artifact)
+!kiosk/build/
+!kiosk/build/*.spec
 
 # Environment
 .env
