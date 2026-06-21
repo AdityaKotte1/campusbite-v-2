@@ -62,50 +62,31 @@ In the MunchAdda **admin app → Kiosks → Register Kiosk**, create a kiosk for
 | **Canteen ID** | the canteen this kiosk serves |
 | **API URL** | the **admin app deployment URL** (e.g. `https://admin.munchadda.com`) — ask whoever deployed the admin app |
 
-## 5. Install
+## 5. Install — one command
+
+Clone the repo and run the **one-shot bootstrap** from the `kiosk/` folder. It installs everything (packages, kiosk user, Python venv + deps, the auto-start service), **asks you for the credentials**, and writes the config for you — no hand-editing.
 
 ```bash
-# Put the app in /opt/munchadda-kiosk
-sudo mkdir -p /opt/munchadda-kiosk
-sudo git clone <your-repo-url> /opt/munchadda-kiosk
-sudo chown -R "$USER":"$USER" /opt/munchadda-kiosk
-
-# Run the one-shot setup (installs packages, creates the kiosk user, the service, firewall)
-cd /opt/munchadda-kiosk
-sudo bash scripts/setup.sh
+sudo apt-get update && sudo apt-get install -y git
+git clone <your-repo-url> ~/munchadda
+cd ~/munchadda/kiosk
+sudo bash scripts/bootstrap-pi.sh
 ```
 
-When `setup.sh` finishes, fill in your config:
+When it prompts, paste the values from **step 4**:
+- **Kiosk ID**
+- **API Key**
+- **Canteen ID**
+- **API URL** → the **admin app URL** (e.g. `https://admin.munchadda.com`)
 
-```bash
-# 1. Create the config from the example
-cp /opt/munchadda-kiosk/config/kiosk.yaml.example \
-   /opt/munchadda-kiosk/config/kiosk.yaml
-nano /opt/munchadda-kiosk/config/kiosk.yaml
-```
+It finishes with the kiosk service **enabled and running**.
 
-In `kiosk.yaml` set (using the values from step 4):
-
-```yaml
-server:
-  base_url: "https://admin.munchadda.com"   # <-- the ADMIN APP URL, not the student app
-kiosk:
-  id: "<your-kiosk-id>"
-  canteen_id: "<your-canteen-id>"
-```
-
-```bash
-# 2. Put the API key (secret) in the secrets file, NOT in kiosk.yaml
-sudo cp /opt/munchadda-kiosk/config/secrets.env.example /etc/munchadda-kiosk/secrets.env
-sudo nano /etc/munchadda-kiosk/secrets.env       # set MUNCHADDA_API_KEY=<your-api-key>
-sudo chmod 600 /etc/munchadda-kiosk/secrets.env
-```
-
-```bash
-# 3. Find your printer's USB IDs and put them in kiosk.yaml (printer.vendor_id / product_id)
-lsusb
-# Example line: Bus 001 Device 003: ID 0483:5743 ...  -> vendor_id "0x0483", product_id "0x5743"
-```
+> **Printer not the default model?** The bootstrap uses default thermal-printer USB IDs. If your scans don't print, find your printer's IDs and set them once:
+> ```bash
+> lsusb        # e.g. "ID 0483:5743 ..."  ->  vendor_id "0x0483", product_id "0x5743"
+> sudo nano /opt/munchadda-kiosk/config/kiosk.yaml    # set printer.vendor_id / product_id
+> sudo systemctl restart munchadda-kiosk
+> ```
 
 ## 6. Reboot
 
