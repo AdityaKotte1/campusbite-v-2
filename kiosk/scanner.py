@@ -217,3 +217,15 @@ class BarcodeScanner:
                 log.exception("on_scan callback raised: %s", exc)
         else:
             log.warning("on_scan callback not set — dropping scan: %s", data[:40])
+
+
+def get_scanner(tk_root=None):
+    """Return the OS-appropriate scanner. Linux/Pi: evdev (BarcodeScanner).
+    Windows: focus-based WindowsScanner (needs the Tk root window)."""
+    import sys
+    if sys.platform == "win32":
+        from scanner_windows import WindowsScanner
+        if tk_root is None:
+            raise RuntimeError("Windows scanner requires the Tk root window")
+        return WindowsScanner(tk_root)
+    return BarcodeScanner()
