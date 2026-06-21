@@ -26,7 +26,7 @@ async function getOrCreateQRToken(orderId: string, userId: string) {
     return { error: 'payment_required', message: 'Payment must be completed first', status: 402 };
   }
 
-  if (['cancelled', 'payment_failed'].includes(order.status)) {
+  if (['cancelled', 'payment_failed', 'collected'].includes(order.status)) {
     return { error: 'order_invalid', message: 'QR not available for this order status', status: 400 };
   }
 

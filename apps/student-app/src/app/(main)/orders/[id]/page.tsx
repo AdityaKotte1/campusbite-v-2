@@ -69,7 +69,11 @@ export default function OrderDetailPage({ params }: Props) {
   });
 
   const isCancellable = order && CANCELLABLE_STATUSES.includes(order.status);
-  const canShowQR = order?.payment_status === 'paid' && order?.status !== 'cancelled' && order?.status !== 'payment_failed';
+  const canShowQR =
+    order?.payment_status === 'paid' &&
+    order?.status !== 'cancelled' &&
+    order?.status !== 'payment_failed' &&
+    order?.status !== 'collected';
 
   if (isLoading) {
     return (
@@ -277,8 +281,14 @@ export default function OrderDetailPage({ params }: Props) {
             </>
           )}
         </div>
+      ) : canShowQR ? (
+        <QRDisplay orderId={id} />
       ) : (
-        canShowQR && <QRDisplay orderId={id} />
+        <div className="bg-surface rounded-2xl border border-border p-6 text-center text-sm text-text-3">
+          {order.status === 'collected'
+            ? 'This order has been collected — the QR code is no longer available.'
+            : 'QR code is not available for this order.'}
+        </div>
       )}
     </div>
   );

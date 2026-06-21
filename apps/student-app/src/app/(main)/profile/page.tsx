@@ -872,6 +872,22 @@ export default function ProfilePage() {
           </div>
         </section>
 
+        {/* Billing */}
+        <section className="bg-surface rounded-2xl border border-border overflow-hidden shadow-sm">
+          <div className="px-4 py-3 border-b border-border">
+            <p className="eyebrow">Billing</p>
+          </div>
+          <div className="divide-y divide-border">
+            <Link href="/invoices" className="w-full flex items-center gap-3 px-4 py-3.5 min-h-[56px] hover:bg-bg-2 transition-colors duration-150 cursor-pointer">
+              <div className="w-9 h-9 bg-green-light rounded-lg flex items-center justify-center flex-shrink-0">
+                <Receipt className="w-4 h-4 text-green" />
+              </div>
+              <span className="flex-1 text-sm font-medium text-text text-left">Invoices</span>
+              <ChevronRight className="w-4 h-4 text-text-3" />
+            </Link>
+          </div>
+        </section>
+
         {/* Support & Legal */}
         <section className="bg-surface rounded-2xl border border-border overflow-hidden shadow-sm">
           <div className="px-4 py-3 border-b border-border">
