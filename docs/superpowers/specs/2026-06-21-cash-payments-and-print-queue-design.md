@@ -72,8 +72,9 @@ print_jobs (new):
 | `POST /api/v1/orders` (student, **extend**) | student | Accept `payment_method: 'cash'`. For cash: create `payment_pending`/`cash`, skip Razorpay + QR, return order. |
 | `GET /api/v1/admin/cash-orders?status=pending` | staff/canteen_admin/super_admin (canteen-scoped) | List cash orders awaiting approval for the caller's canteen(s). |
 | `POST /api/v1/admin/orders/[id]/approve-cash` | staff/canteen_admin/super_admin (canteen-scoped) | Verify order is cash + `payment_pending`; set confirmed/paid/`approved_by`/`approved_at`; enqueue `print_job`; audit. **Idempotent** (already approved → no-op, no duplicate job). |
-| `GET /api/v1/kiosk/print-queue` | **kiosk HMAC** (existing scheme) | Return this kiosk's-canteen `pending` jobs **with full receipt payload** (order #, items, totals, token, timestamps). |
-| `POST /api/v1/kiosk/print-queue/[id]/ack` | **kiosk HMAC** | Body `{ result: 'printed' \| 'failed' }`. Sets `printed`/`failed`, `printed_at`, `printed_by_kiosk`, `attempts++`. |
+| `GET /api/v1/kiosk/print-queue` | **kiosk HMAC** (existing scheme) | Return this kiosk's-canteen `pending` jobs **with full receipt payload** (order #, items, totals, token, timestamps). Used for the **safety poll** and reconnect catch-up (not the per-second loop). |
+| `POST /api/v1/kiosk/print-queue/[id]/ack` | **kiosk HMAC** | Body `{ result: 'printed' \| 'failed' }`. Sets `printed`/`failed`, `printed_at`, `printed_by_kiosk`, `attempts++`. **Ack stays on the HMAC REST path** (keeps the print-only data path clean). |
+| `GET /api/v1/kiosk/realtime-token` | **kiosk HMAC** | Mint a **short-lived, canteen-scoped** Supabase JWT (signed with the project JWT secret, claim `kiosk_canteen_id`) for the agent's Realtime subscription. Refreshed before expiry. |
 | `POST /api/v1/admin/orders/[id]/reprint` | staff/canteen_admin/super_admin (canteen-scoped) | Re-enqueue a `cash_bill` print job (paper jam / lost bill). |
 
 All admin endpoints reuse `lib/auth.ts` (`requireAdmin` + `resolveCanteenScope`/`canAccessCanteen`). All kiosk endpoints reuse the existing HMAC auth (`verifyKioskHmac`) and resolve the canteen from the kiosk id.
@@ -88,8 +89,8 @@ Student → cart → **Pay online** (Razorpay) → pays → verify/webhook → `
 2. Student goes to the counter and gives the order number / shows the app.
 3. Staff opens the admin web **Cash Payments** page on the counter PC → sees Order #123 → **collects cash** → clicks **Approve**.
 4. Backend: order → `confirmed`/`paid(cash)`, `approved_by`/`approved_at` set, **print_job enqueued**, audit logged.
-5. The PC's **Windows agent** (Part 3) is polling `print-queue` every 1–2s → gets the job → **prints the bill** (header + watermark + token) → acks `printed`.
-6. Bill prints in ~1–2s. Order flows `confirmed → preparing → ready → collected` on the prep board; customer called by token.
+5. The PC's **Windows agent** (Part 3) is **subscribed via Supabase Realtime** to `print_jobs` for its canteen → the new job is **pushed in ~1s** → **prints the bill** (header + watermark + token) → acks `printed` over the HMAC REST endpoint.
+6. Bill prints in ~1s. Order flows `confirmed → preparing → ready → collected` on the prep board; customer called by token.
 
 ### Scenario C — Cash, **Pi counter** (no screen at counter)
 Identical to B, except staff approve on a **phone/tablet browser** (same admin web page), and the **headless Pi** is the agent polling `print-queue` → prints. **Same backend, same code path.**
@@ -121,7 +122,8 @@ Identical to B, except staff approve on a **phone/tablet browser** (same admin w
 - API routes: `approve-cash`, `cash-orders` list, `print-queue` GET, `print-queue ack`, `reprint`.
 
 **Part 2 — Pi agent**
-- A `print_worker` in the kiosk app: a loop that polls `print-queue` (1–2s), prints each job via `printer.py`, acks. Runs as a daemon thread alongside the scanner loop. Reuses the existing HMAC client.
+- A `print_worker` in the kiosk app: **subscribes via Supabase Realtime** to `print_jobs` for its canteen (using the minted scoped JWT), prints each pushed job via `printer.py`, acks over HMAC REST. Runs as a daemon thread alongside the scanner loop. Reuses the existing HMAC client for the token fetch + ack.
+- **Safety net:** a low-frequency reconcile poll (every 30–60s) of `GET /print-queue` + a catch-up fetch on (re)connect, so a dropped WebSocket never strands a bill. JWT auto-refresh before expiry.
 
 **Part 3 — Windows app (separate spec)**
 - Same `print_worker` + scanner/printer adapters + first-run setup screen + PyInstaller packaging.
@@ -134,3 +136,18 @@ Identical to B, except staff approve on a **phone/tablet browser** (same admin w
 - Scope: staff/canteen_admin cannot approve, list, or print another canteen's cash orders.
 - Offline: agent reconnect drains pending jobs; **Reprint** re-enqueues.
 - `approve_cash_order` SQL function: idempotent + atomic under concurrent double-click.
+- Realtime: approving a cash order pushes the job to a subscribed agent in <2s; the JWT only authorizes its own canteen's `print_jobs` (cross-canteen subscribe returns nothing); reconnect drains anything missed while offline.
+
+## 11. Realtime delivery (push, with safety net)
+
+**Mechanism:** Supabase Realtime (WebSocket Postgres-changes), **not** a per-second poll and **not** a custom WebSocket server (the Vercel backend can't host long-lived sockets).
+
+- **Enable Realtime** on `print_jobs`.
+- **Scoped token:** the agent calls `GET /api/v1/kiosk/realtime-token` (kiosk HMAC). The server mints a short-lived JWT signed with the Supabase **JWT secret**, carrying claim `kiosk_canteen_id = <the kiosk's canteen>`. (Requires `SUPABASE_JWT_SECRET` in the admin/server env.)
+- **RLS for Realtime:** a SELECT policy on `print_jobs` — `canteen_id = (auth.jwt() ->> 'kiosk_canteen_id')::uuid` — so the WebSocket only ever delivers that canteen's rows. The public **anon key** (already shipped in the web apps) is used for the socket; RLS + the JWT do the scoping.
+- **Agent flow:** connect Realtime with anon key, `setAuth(jwt)`, subscribe to `INSERT on print_jobs where canteen_id=<mine>` → on push, print → `POST …/ack` over HMAC REST. Refresh the JWT before expiry.
+- **Safety net:** a 30–60s reconcile poll of `GET /print-queue` + a catch-up fetch on connect/reconnect. Normal case = instant push; the poll only backstops dropped sockets.
+
+**Security unchanged:** the distributed agent holds the public anon key + the kiosk HMAC secret (print-only) + an ephemeral canteen-scoped JWT (read-only, one canteen's `print_jobs`). It **cannot create or approve** payments. Approval remains an authenticated staff action, audited.
+
+> **Collection method (defaulted):** cash orders are collected by the **printed token number** via the normal prep-board lifecycle — **no pickup QR** (online keeps its QR). Easy to add a cash QR later if wanted.
