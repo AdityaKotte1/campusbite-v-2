@@ -137,16 +137,18 @@ class KioskDisplay:
         w = self.config.get("width", 800)
         h = self.config.get("height", 480)
 
-        if self.config.get("fullscreen", True):
+        fullscreen = self.config.get("fullscreen", True)
+        if fullscreen:
             self.root.attributes("-fullscreen", True)
         else:
             self.root.geometry(f"{w}x{h}")
 
         self.root.configure(bg=COLOURS["idle_bg"])
-        self.root.resizable(False, False)
-
-        # Hide cursor on kiosk display
-        self.root.config(cursor="none")
+        # Pi kiosk (fullscreen): locked size + hidden cursor. Windowed mode
+        # (Windows, fullscreen=False): normal resizable window with a cursor.
+        self.root.resizable(not fullscreen, not fullscreen)
+        if fullscreen:
+            self.root.config(cursor="none")
 
         # Build font cache
         self._fonts = self._load_fonts()

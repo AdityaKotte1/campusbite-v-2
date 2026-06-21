@@ -84,10 +84,14 @@ def load_pi_config(base_dir: str) -> dict:
 class KioskApp:
     """Main application class.  Instantiate once; call run() to start."""
 
-    def __init__(self, base_dir: str) -> None:
+    def __init__(self, base_dir: str, config: Optional[dict] = None) -> None:
         self.base_dir = base_dir
-        from config import load_config
-        self.config = load_config(base_dir)
+        if config is not None:
+            # Pre-loaded by main.py (already normalized + Windows env set).
+            self.config = config
+        else:
+            from config import load_config
+            self.config = load_config(base_dir)
         if self.config is None:
             raise RuntimeError(
                 "Kiosk is not configured. Run the Windows setup window to "
@@ -135,9 +139,16 @@ class KioskApp:
             self.display = KioskDisplay(display_cfg, audio=self.audio)
 
         log.info("Initialising scanner …")
-        from scanner import BarcodeScanner
-        self.scanner = BarcodeScanner()
-        self.scanner.on_scan = self.handle_scan
+        import sys
+        from scanner import get_scanner
+        if sys.platform == "win32":
+            # The Windows scanner binds keys on the Tk root, which only exists
+            # after the display window is set up. Defer its creation to run(),
+            # after self.display.root is live. (None here; built later.)
+            self.scanner = None
+        else:
+            self.scanner = get_scanner(tk_root=None)  # Linux/Pi: evdev
+            self.scanner.on_scan = self.handle_scan
 
         # Daemon threads (started in run())
         self._threads: list[threading.Thread] = []
@@ -154,9 +165,18 @@ class KioskApp:
         self.audio.play("startup")
 
         # Background threads (all daemon so they die when main thread exits)
-        self._start_daemon("scanner", self.scanner.start)
+        if self.scanner is not None:
+            # Linux/Pi: evdev scanner runs its own blocking read loop.
+            self._start_daemon("scanner", self.scanner.start)
         self._start_daemon("sync_loop", self._sync_loop)
         self._start_daemon("heartbeat_loop", self._heartbeat_loop)
+
+        # Windows: the scanner binds keys on the Tk root, which only exists
+        # once the display has been set up (display.run() creates it on the
+        # main thread). A tiny waiter thread blocks on the display's
+        # _setup_done event, then schedules the bind on the Tk main thread.
+        if self.scanner is None:
+            self._start_daemon("win_scanner_boot", self._boot_windows_scanner)
 
         log.info("Starting display main loop …")
         self.display.run()  # Blocks until window is closed
@@ -174,6 +194,26 @@ class KioskApp:
         t.start()
         self._threads.append(t)
         log.debug("Daemon thread started: %s", name)
+
+    def _boot_windows_scanner(self) -> None:
+        """Windows only: wait until the Tk root exists, then build + start the
+        focus-based scanner on the Tk main thread. KioskDisplay sets
+        _setup_done once its root is live; we schedule the key-bind via the
+        display's thread-safe _schedule helper."""
+        from scanner import get_scanner
+
+        # Wait for the display's Tk root to be created (set in _setup()).
+        if not self.display._setup_done.wait(timeout=30):
+            log.error("Display did not initialise in time — Windows scanner not started.")
+            return
+
+        def _bind():
+            self.scanner = get_scanner(tk_root=self.display.root)
+            self.scanner.on_scan = self.handle_scan
+            self.scanner.start()
+            log.info("Windows scanner bound to Tk root.")
+
+        self.display._schedule(_bind)
 
     # ------------------------------------------------------------------
     # Scan handling

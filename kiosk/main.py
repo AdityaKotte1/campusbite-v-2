@@ -62,9 +62,38 @@ def main() -> None:
     log.info("Python %s on %s", sys.version.split()[0], sys.platform)
     log.info("Base directory: %s", BASE_DIR)
 
+    # ------------------------------------------------------------------
+    # Config load + first-run setup (Windows). On Linux cfg is never None.
+    # ------------------------------------------------------------------
+    from config import load_config
+    cfg = load_config(BASE_DIR)
+    if cfg is None:  # Windows, not yet configured
+        log.info("No config found — launching Windows setup window …")
+        from setup_window import run_setup
+        if run_setup() is None:
+            log.info("Setup cancelled by user — exiting.")
+            sys.exit(0)            # user closed setup without saving
+        cfg = load_config(BASE_DIR)
+
+    # ------------------------------------------------------------------
+    # Windows env: there is no systemd to inject secrets.env, so feed the
+    # api_key the app reads from os.environ ('MUNCHADDA_API_KEY') here, from
+    # the saved Windows config. setdefault() means a real env var (if the user
+    # set one) still wins. Must run BEFORE KioskApp builds the api client.
+    # No DB encryption key is set: the offline queue (offline/queue.py) uses
+    # plain sqlite3 and reads no encryption key, so none is required.
+    # On Linux this whole block is skipped (cfg came from yaml/systemd env).
+    # ------------------------------------------------------------------
+    if sys.platform == "win32":
+        from config import load_windows_config_raw
+        raw = load_windows_config_raw() or {}
+        api_key = raw.get("api_key", "")
+        if api_key:
+            os.environ.setdefault("MUNCHADDA_API_KEY", api_key)
+
     from app import KioskApp  # noqa: import after path setup
 
-    app = KioskApp(BASE_DIR)
+    app = KioskApp(BASE_DIR, config=cfg)
     try:
         app.run()
     except KeyboardInterrupt:
