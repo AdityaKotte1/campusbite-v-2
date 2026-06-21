@@ -45,8 +45,10 @@ export async function GET(request: Request) {
       query = query.eq('status', status);
     }
 
-    // Hide unpaid orders from the student history listing (rows stay in the DB).
-    query = query.not('status', 'in', '("payment_pending","payment_failed")');
+    // Hide unpaid ONLINE orders (abandoned payments) from history — but always
+    // show cash orders: a pending cash order is "placed, awaiting counter
+    // payment", and the student must be able to see/track it.
+    query = query.or('payment_method.eq.cash,status.not.in.(payment_pending,payment_failed)');
 
     const { data, error } = await query;
 
