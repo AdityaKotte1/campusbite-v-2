@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
   const service = createServiceClient();
   let q = service
     .from('orders')
-    .select('*, user:users(id, full_name, phone), canteen:canteens(id, name), order_items(*)')
+    // Only the columns the Cash Payments list renders — no order_items embed
+    // (the partial index idx_orders_cash_pending makes this filter instant).
+    .select('id, order_number, total_paise, created_at, user:users(id, full_name, phone), canteen:canteens(id, name)')
     .eq('payment_method', 'cash')
     .eq('status', 'payment_pending')
     .order('created_at', { ascending: true });

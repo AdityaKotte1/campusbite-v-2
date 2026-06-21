@@ -23,6 +23,13 @@ ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS approved_at    TIMESTAMPTZ;
 ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_approved_by_fkey;
 
+-- Performance: a PARTIAL index holding ONLY the pending cash orders, so the
+-- Cash Payments list is instant no matter how many abandoned payment_pending
+-- (online) orders accumulate.
+CREATE INDEX IF NOT EXISTS idx_orders_cash_pending
+  ON public.orders (canteen_id, created_at)
+  WHERE payment_method = 'cash' AND status = 'payment_pending';
+
 -- 2) Approve a cash order: confirm + mark paid (idempotent under double-click).
 CREATE OR REPLACE FUNCTION public.approve_cash_order(p_order_id UUID, p_staff_id UUID)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -40,6 +47,11 @@ BEGIN
      SET status='confirmed', payment_status='paid',
          approved_by=p_staff_id, approved_at=now(), updated_at=now()
    WHERE id=p_order_id;
+
+  -- Audit inside the same call (reliable on serverless; one fewer round trip
+  -- than a separate insert from the API route).
+  INSERT INTO public.audit_logs(user_id, action, entity_type, entity_id, metadata)
+  VALUES (p_staff_id, 'order.cash_approve', 'order', p_order_id, '{}'::jsonb);
 
   RETURN jsonb_build_object('ok', true, 'order_id', p_order_id);
 END $$;
