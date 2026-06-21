@@ -16,7 +16,7 @@ def run_setup(existing=None):
     existing = existing or {}
     root = tk.Tk()
     root.title("MunchAdda Kiosk - Setup")
-    root.geometry("460x360")
+    root.geometry("460x420")
     result = {}
 
     fields = {}
@@ -28,6 +28,7 @@ def run_setup(existing=None):
 
     row("Kiosk ID", "kiosk_id")
     row("API Key", "api_key")
+    row("Canteen ID", "canteen_id")
     row("API URL", "api_base_url", DEFAULT_API_URL)
 
     tk.Label(root, text="Receipt printer").pack(anchor="w", padx=16, pady=(8, 0))
@@ -42,6 +43,7 @@ def run_setup(existing=None):
         return {
             "kiosk_id": fields["kiosk_id"].get().strip(),
             "api_key": fields["api_key"].get().strip(),
+            "canteen_id": fields["canteen_id"].get().strip(),
             "api_base_url": fields["api_base_url"].get().strip().rstrip("/"),
             "printer_name": printer_var.get(),
             "fullscreen": False,
