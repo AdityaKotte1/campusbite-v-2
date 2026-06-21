@@ -2,15 +2,16 @@
 -- cash-payments.sql — cash orders + print queue + Realtime scoping
 -- ============================================================================
 
--- 1) Orders: payment method + approval audit columns
+-- 1) Orders: payment method + approval audit columns.
+--    NOTE: orders.payment_method may already exist in the live DB with other
+--    values (e.g. 'razorpay'/'upi'/NULL) that the analytics payment-mix reads —
+--    so we do NOT add a strict CHECK (it would reject existing rows) and we do
+--    NOT rewrite existing values. The feature only ever filters
+--    `payment_method = 'cash'`; everything else is treated as "online".
 ALTER TABLE public.orders
-  ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFAULT 'online',
+  ADD COLUMN IF NOT EXISTS payment_method TEXT,
   ADD COLUMN IF NOT EXISTS approved_by    UUID REFERENCES public.users(id),
   ADD COLUMN IF NOT EXISTS approved_at    TIMESTAMPTZ;
-DO $$ BEGIN
-  ALTER TABLE public.orders ADD CONSTRAINT orders_payment_method_chk
-    CHECK (payment_method IN ('online','cash'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 2) Print queue
 CREATE TABLE IF NOT EXISTS public.print_jobs (
@@ -76,5 +77,12 @@ END $$;
 GRANT EXECUTE ON FUNCTION public.approve_cash_order(UUID, UUID) TO service_role;
 GRANT EXECUTE ON FUNCTION public.reprint_cash_bill(UUID) TO service_role;
 
--- 6) Enable Realtime on print_jobs
-ALTER PUBLICATION supabase_realtime ADD TABLE public.print_jobs;
+-- 6) Enable Realtime on print_jobs (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'print_jobs'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.print_jobs;
+  END IF;
+END $$;
