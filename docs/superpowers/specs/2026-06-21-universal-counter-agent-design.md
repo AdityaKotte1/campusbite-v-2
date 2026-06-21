@@ -101,7 +101,26 @@ kiosk/
 
 - `config.py`, `scanner_windows.py`, `setup_window.py`, `requirements-windows.txt`, `build/munchadda-kiosk.spec` (new).
 - `scanner.py` (scanner factory), `printer.py` (transport selection), `app.py` (windowed flag + factories), `main.py` (config via `config.py`) — modified, **Linux path behavior identical**.
-- A short `kiosk/WINDOWS.md`: how to build the `.exe`, install the printer driver, and configure on a client PC.
+- **One-click setup + pin-to-point guides (see §15):** `kiosk/scripts/bootstrap-pi.sh` (fresh-Pi installer), `kiosk/PI_SETUP.md` (fresh-Pi, assume-zero-knowledge walkthrough), `kiosk/WINDOWS.md` (build the `.exe` + install on a client PC).
+
+## 15. Setup & onboarding — "one click, ready to go"
+
+Both targets must be trivial to stand up. **Pi = one command; Windows = one double-click.**
+
+### 15a. Raspberry Pi — fresh device to running kiosk
+A single bootstrap script does everything; a markdown guide covers the steps before/around it for someone with zero Linux knowledge.
+
+- **`kiosk/scripts/bootstrap-pi.sh`** (idempotent, run once on a fresh Pi):
+  1. `apt-get install` system deps: `python3`, `python3-venv`, `python3-pip`, `libusb-1.0-0`, `libjpeg`/`zlib` (Pillow), the watermark TTF font, `x11`/openbox bits for the fullscreen Tk UI (if a screen is attached).
+  2. Copy/clone the app to `/opt/munchadda-kiosk`, create a venv, `pip install -r requirements.txt`.
+  3. Install + `systemctl enable` the `munchadda-kiosk.service` (autostart on boot) and the X autostart (`xsession.sh`) if running with a display.
+  4. **Prompt** for `Kiosk ID`, `API Key`, `API URL` (and printer device if needed) → write `/etc/munchadda-kiosk/secrets.env`.
+  5. Start the service. Done — reboots straight into the kiosk.
+- **`kiosk/PI_SETUP.md`** — assume-nothing walkthrough: (1) flash **Raspberry Pi OS** with Raspberry Pi Imager (set Wi-Fi + enable SSH in the imager), (2) boot + find the Pi / open a terminal, (3) plug in the scanner + printer, (4) run **one command** (`curl -fsSL <raw bootstrap URL> | bash` — or `cd /opt/munchadda-kiosk && sudo bash scripts/bootstrap-pi.sh`), (5) paste the kiosk credentials when prompted, (6) reboot. Includes the exact printer-driver/USB notes and a "how to get Kiosk ID + API Key from the admin → Register Kiosk dialog" step.
+
+### 15b. Windows — one double-click
+- The PyInstaller **`.exe` IS the installer/runtime**: double-click → if unconfigured, the **setup window** opens (kiosk_id, api_key, API URL, printer dropdown, Test print, Save) → it runs. No separate installer needed for v1.
+- **`kiosk/WINDOWS.md`** — for you (the builder): how to produce the `.exe` (`pyinstaller build/munchadda-kiosk.spec`); for the client: install the thermal printer's Windows driver, double-click the `.exe`, enter the credentials, pick the printer, optionally tick "start with Windows" (drop a shortcut in `shell:startup`).
 
 ## 13. Testing
 
