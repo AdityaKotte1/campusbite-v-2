@@ -233,8 +233,14 @@ export async function POST(request: Request) {
     const totalPaise = Math.max(0, subtotalPaise + taxPaise - discountPaise);
     const orderNumber = generateOrderNumber();
 
-    // Create order
-    const { data: order, error: orderErr } = await supabase
+    // Create the order with the SERVICE client. Students hold the public anon
+    // key + their JWT, so a user-context insert gated only by RLS lets them POST
+    // a forged status='confirmed'/payment_status='paid'/total=1 order straight to
+    // PostgREST and collect for free. Orders are therefore created ONLY here,
+    // server-side, with prices computed above. (See fix-order-integrity.sql,
+    // which drops the student INSERT policies on orders/order_items/qr_tokens.)
+    const svc = createServiceClient();
+    const { data: order, error: orderErr } = await svc
       .from('orders')
       .insert({
         order_number: orderNumber,
@@ -260,14 +266,14 @@ export async function POST(request: Request) {
     }
 
     // Create order items
-    const { error: itemsErr } = await supabase
+    const { error: itemsErr } = await svc
       .from('order_items')
       .insert(orderItemsData.map((item: Record<string, unknown>) => ({ ...item, order_id: order.id })));
 
     if (itemsErr) {
       console.error('[orders POST] order items create error:', itemsErr);
       // Rollback order
-      await supabase.from('orders').delete().eq('id', order.id);
+      await svc.from('orders').delete().eq('id', order.id);
       await releaseCoupon();
       return NextResponse.json({ error: 'items_create_failed' }, { status: 500 });
     }
@@ -282,8 +288,8 @@ export async function POST(request: Request) {
         });
         // If stock ran out between our pre-check and now (race condition), rollback
         if (stockResult && !stockResult.success && stockResult.error === 'INSUFFICIENT_STOCK') {
-          await supabase.from('order_items').delete().eq('order_id', order.id);
-          await supabase.from('orders').delete().eq('id', order.id);
+          await svc.from('order_items').delete().eq('order_id', order.id);
+          await svc.from('orders').delete().eq('id', order.id);
           await releaseCoupon();
           return NextResponse.json({
             error: 'insufficient_stock',

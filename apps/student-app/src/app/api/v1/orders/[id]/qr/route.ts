@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { QR_EXPIRY_HOURS } from '@/lib/constants';
 import { randomUUID } from 'crypto';
 
@@ -50,7 +50,11 @@ async function getOrCreateQRToken(orderId: string, userId: string) {
   const expiresAt = new Date(Date.now() + QR_EXPIRY_HOURS * 60 * 60 * 1000).toISOString();
   const token = randomUUID();
 
-  const { data: newToken, error: createErr } = await supabase
+  // Mint the token with the SERVICE client — students no longer have a direct
+  // qr_tokens INSERT policy (fix-order-integrity.sql). Ownership + paid status
+  // were already verified above, so this only ever mints for the caller's own
+  // paid order.
+  const { data: newToken, error: createErr } = await createServiceClient()
     .from('qr_tokens')
     .insert({
       order_id: orderId,
@@ -104,8 +108,20 @@ export async function POST(_request: Request, { params }: Params) {
       return NextResponse.json({ error: 'unauthorized', message: 'Not authenticated' }, { status: 401 });
     }
 
-    // Invalidate existing tokens
-    await supabase
+    // Verify ownership BEFORE revoking (the service client below bypasses RLS,
+    // so we must not let a user revoke another user's tokens via the id param).
+    const { data: ownedOrder } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single();
+    if (!ownedOrder) {
+      return NextResponse.json({ error: 'not_found', message: 'Order not found' }, { status: 404 });
+    }
+
+    // Invalidate existing tokens (service client — students have no qr_tokens UPDATE policy)
+    await createServiceClient()
       .from('qr_tokens')
       .update({ status: 'revoked' })
       .eq('order_id', id)
