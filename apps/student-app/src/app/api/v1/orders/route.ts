@@ -16,6 +16,7 @@ const createOrderSchema = z.object({
   items: z.array(orderItemSchema).min(1).max(50),
   special_instructions: z.string().max(1000).optional().nullable(),
   coupon_code: z.string().max(64).optional().nullable(),
+  payment_method: z.enum(['online', 'cash']).optional().default('online'),
 });
 
 export async function GET(request: Request) {
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const { canteen_id, items, special_instructions, coupon_code } = parsed.data;
+    const { canteen_id, items, special_instructions, coupon_code, payment_method } = parsed.data;
 
     // Verify canteen exists and is open
     const { data: canteen, error: canteenErr } = await supabase
@@ -245,6 +246,7 @@ export async function POST(request: Request) {
         total_paise: totalPaise,
         coupon_code: coupon_code ?? null,
         special_instructions: special_instructions ?? null,
+        payment_method,
       })
       .select()
       .single();

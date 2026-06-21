@@ -44,6 +44,7 @@ async function createOrder(payload: {
   items: Array<{ menu_item_id: string; quantity: number }>;
   coupon_code?: string;
   special_instructions?: string;
+  payment_method?: 'online' | 'cash';
 }) {
   const res = await fetch('/api/v1/orders', {
     method: 'POST',
@@ -86,6 +87,7 @@ export default function CartPage() {
     description: string;
   } | null>(null);
   const [specialInstructions, setSpecialInstructions] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cash'>('online');
   const [error, setError] = useState<string | null>(null);
 
   const couponMutation = useMutation({
@@ -189,6 +191,49 @@ export default function CartPage() {
       setError(err.message);
     },
   });
+
+  const cashCheckoutMutation = useMutation({
+    mutationFn: async () => {
+      if (!canteenId) throw new Error('No items in cart');
+
+      const orderRes = await createOrder({
+        canteen_id: canteenId,
+        items: items.map((ci) => ({
+          menu_item_id: ci.menuItem.id,
+          quantity: ci.quantity,
+        })),
+        coupon_code: appliedCoupon?.code,
+        special_instructions: specialInstructions || undefined,
+        payment_method: 'cash',
+      });
+
+      return orderRes.data as { id: string; order_number?: string };
+    },
+    onSuccess: (order) => {
+      clearCart();
+      showToast(
+        order.order_number
+          ? `Order placed — pay cash at the counter. Order #${order.order_number}.`
+          : 'Order placed — pay cash at the counter.',
+        'success'
+      );
+      router.push(`/orders/${order.id}`);
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+    },
+  });
+
+  const isCheckoutPending = checkoutMutation.isPending || cashCheckoutMutation.isPending;
+
+  const handleCheckout = () => {
+    setError(null);
+    if (paymentMethod === 'cash') {
+      cashCheckoutMutation.mutate();
+    } else {
+      checkoutMutation.mutate();
+    }
+  };
 
   const discountPaise = appliedCoupon?.discount_paise ?? 0;
   const finalTotalPaise = Math.max(0, totalPaise - discountPaise);
@@ -356,6 +401,42 @@ export default function CartPage() {
         </div>
       </div>
 
+      {/* Payment Method */}
+      <div className="bg-surface rounded-2xl border border-border p-4">
+        <p className="eyebrow mb-3">Payment Method</p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setPaymentMethod('online')}
+            aria-pressed={paymentMethod === 'online'}
+            className={`rounded-lg border px-3 py-3 text-sm font-semibold transition-colors cursor-pointer ${
+              paymentMethod === 'online'
+                ? 'border-brand bg-brand text-white'
+                : 'border-border-2 bg-surface text-text hover:border-text-3'
+            }`}
+          >
+            Pay online
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentMethod('cash')}
+            aria-pressed={paymentMethod === 'cash'}
+            className={`rounded-lg border px-3 py-3 text-sm font-semibold transition-colors cursor-pointer ${
+              paymentMethod === 'cash'
+                ? 'border-brand bg-brand text-white'
+                : 'border-border-2 bg-surface text-text hover:border-text-3'
+            }`}
+          >
+            Pay by cash
+          </button>
+        </div>
+        {paymentMethod === 'cash' && (
+          <p className="text-xs text-text-3 mt-2.5">
+            Place your order now and pay with cash at the counter. Your order will be confirmed once staff accept it.
+          </p>
+        )}
+      </div>
+
       {/* Error */}
       {error && (
         <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
@@ -367,14 +448,19 @@ export default function CartPage() {
       {/* Checkout Button */}
       <Button
         size="xl"
-        onClick={() => checkoutMutation.mutate()}
-        disabled={checkoutMutation.isPending || items.length === 0}
+        onClick={handleCheckout}
+        disabled={isCheckoutPending || items.length === 0}
         className="w-full cursor-pointer"
       >
-        {checkoutMutation.isPending ? (
+        {isCheckoutPending ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
             Processing...
+          </>
+        ) : paymentMethod === 'cash' ? (
+          <>
+            <span>Place Order — <span className="font-display tracking-tight tabular-nums">{formatPrice(finalTotalPaise)}</span></span>
+            <ChevronRight className="w-5 h-5" />
           </>
         ) : (
           <>
@@ -385,7 +471,9 @@ export default function CartPage() {
       </Button>
 
       <p className="text-xs text-text-3 text-center">
-        Secured by Razorpay. Your payment information is encrypted.
+        {paymentMethod === 'cash'
+          ? 'Pay with cash at the counter when you collect your order.'
+          : 'Secured by Razorpay. Your payment information is encrypted.'}
       </p>
     </div>
   );
