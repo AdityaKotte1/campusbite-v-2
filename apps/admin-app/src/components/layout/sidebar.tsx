@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, ShoppingBag, UtensilsCrossed, Users, UserCheck,
   BarChart3, Monitor, Settings, ClipboardList, LogOut, ChevronLeft,
-  Building2, Store, CreditCard, LifeBuoy,
+  Building2, Store, CreditCard, LifeBuoy, Banknote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
@@ -18,6 +18,7 @@ const ALL_NAV = [
   { href: '/subscriptions', label: 'Subscriptions', Icon: CreditCard, roles: ['super_admin'] },
   { href: '/canteens',   label: 'Canteens',   Icon: Store,           roles: ['super_admin', 'canteen_admin'] },
   { href: '/orders',     label: 'Orders',     Icon: ShoppingBag,     roles: ['super_admin', 'canteen_admin', 'staff'] },
+  { href: '/cash-payments', label: 'Cash Payments', Icon: Banknote, roles: ['super_admin', 'canteen_admin', 'staff'] },
   { href: '/menu',       label: 'Menu',       Icon: UtensilsCrossed, roles: ['super_admin', 'canteen_admin', 'staff'] },
   { href: '/users',      label: 'Users',      Icon: Users,           roles: ['super_admin', 'canteen_admin'] },
   { href: '/staff',      label: 'Staff',      Icon: UserCheck,       roles: ['super_admin', 'canteen_admin'] },
