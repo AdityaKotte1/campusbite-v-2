@@ -56,6 +56,32 @@ def _divider(char: str = "-", width: int = CHARS) -> str:
     return char * width
 
 
+def connect_printer(config: dict):
+    """Return an escpos printer device chosen by OS.
+    Linux/Pi: USB (pyusb). Windows: Win32Raw via the installed Windows driver.
+
+    All transport imports are lazy (inside this function) so the module still
+    compiles on machines that lack pyusb (e.g. dev Windows boxes).
+    """
+    import sys
+
+    if sys.platform == "win32":
+        from escpos.printer import Win32Raw  # imported only on Windows
+        printer_name = config.get("printer_name")
+        if not printer_name:
+            raise RuntimeError("No Windows printer configured (printer_name missing)")
+        return Win32Raw(printer_name)
+
+    from escpos.printer import Usb  # imported only on Linux
+
+    vid_str = config.get("vendor_id", "0x0483")
+    pid_str = config.get("product_id", "0x5743")
+    vendor_id = int(vid_str, 16) if isinstance(vid_str, str) else int(vid_str)
+    product_id = int(pid_str, 16) if isinstance(pid_str, str) else int(pid_str)
+
+    return Usb(vendor_id, product_id, timeout=0, in_ep=0x81, out_ep=0x01)
+
+
 class ThermalPrinter:
     """Manages connection to the 58mm thermal printer over USB."""
 
@@ -69,19 +95,11 @@ class ThermalPrinter:
     # ------------------------------------------------------------------
 
     def _init_printer(self) -> None:
-        """Attempt to open the USB printer.  Silently stores None on failure."""
+        """Attempt to open the printer (USB on Linux/Pi, Win32Raw on Windows).
+        Silently stores None on failure."""
         try:
-            from escpos.printer import Usb  # type: ignore
-
-            vid_str = self.config.get("vendor_id", "0x0483")
-            pid_str = self.config.get("product_id", "0x5743")
-            vendor_id = int(vid_str, 16) if isinstance(vid_str, str) else int(vid_str)
-            product_id = int(pid_str, 16) if isinstance(pid_str, str) else int(pid_str)
-
-            self._printer = Usb(vendor_id, product_id, timeout=0, in_ep=0x81, out_ep=0x01)
-            log.info(
-                "Thermal printer connected: VID=%s PID=%s", hex(vendor_id), hex(product_id)
-            )
+            self._printer = connect_printer(self.config)
+            log.info("Thermal printer connected via %s", type(self._printer).__name__)
         except Exception as exc:
             log.warning("Printer not available: %s", exc)
             self._printer = None
