@@ -10,8 +10,13 @@
 --    `payment_method = 'cash'`; everything else is treated as "online".
 ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS payment_method TEXT,
-  ADD COLUMN IF NOT EXISTS approved_by    UUID REFERENCES public.users(id),
+  ADD COLUMN IF NOT EXISTS approved_by    UUID,        -- audit only; intentionally NOT a FK
   ADD COLUMN IF NOT EXISTS approved_at    TIMESTAMPTZ;
+-- IMPORTANT: approved_by must NOT be a foreign key to users. A second
+-- orders→users FK makes the `user:users(...)` PostgREST embed ambiguous
+-- (PGRST201) and 500s the Orders / Cash Payments / Dashboard endpoints.
+-- Drop it if a prior run created it.
+ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_approved_by_fkey;
 
 -- 2) Print queue
 CREATE TABLE IF NOT EXISTS public.print_jobs (
