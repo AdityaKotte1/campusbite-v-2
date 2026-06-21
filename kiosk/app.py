@@ -51,8 +51,13 @@ class _ScanRateLimiter:
         return True
 
 
-def _load_config(base_dir: str) -> dict:
-    """Load kiosk.yaml; fall back to kiosk.yaml.example with a warning."""
+def load_pi_config(base_dir: str) -> dict:
+    """Load kiosk.yaml; fall back to kiosk.yaml.example with a warning.
+
+    Linux/Pi-only config path. Extracted from KioskApp.__init__ so that the
+    OS-aware loader in config.py can reuse it unchanged. Behavior is identical
+    to the previous inline _load_config — only the name moved.
+    """
     primary = os.path.join(base_dir, "config", "kiosk.yaml")
     example = os.path.join(base_dir, "config", "kiosk.yaml.example")
 
@@ -81,7 +86,13 @@ class KioskApp:
 
     def __init__(self, base_dir: str) -> None:
         self.base_dir = base_dir
-        self.config = _load_config(base_dir)
+        from config import load_config
+        self.config = load_config(base_dir)
+        if self.config is None:
+            raise RuntimeError(
+                "Kiosk is not configured. Run the Windows setup window to "
+                "create %APPDATA%\\MunchAdda\\config.json."
+            )
 
         # --- State for scan deduplication ---
         self._processing = False
