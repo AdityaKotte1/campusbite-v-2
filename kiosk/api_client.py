@@ -208,6 +208,79 @@ class MunchAddaAPI:
         """
         return self._post("/api/v1/kiosk/sync-offline", {"scans": scans})
 
+    def get_print_queue(self) -> list:
+        """
+        GET /api/v1/kiosk/print-queue
+
+        Expected response:
+          {
+            "data": [
+              {
+                "id": "<job uuid>",
+                "order_id": "<order uuid>",
+                "order": {
+                  "order_number": "CB-...",
+                  "total_paise": 9450,
+                  "subtotal_paise": 9000,
+                  "tax_paise": 450,
+                  "discount_paise": 0,
+                  "order_items": [
+                    {
+                      "menu_item_name": "...",
+                      "quantity": 2,
+                      "unit_price_paise": 4500,
+                      "total_price_paise": 9000
+                    }
+                  ]
+                }
+              },
+              ...
+            ]
+          }
+
+        Returns the list of pending print jobs (empty on error/none).
+        """
+        result = self._get("/api/v1/kiosk/print-queue")
+        if result and isinstance(result.get("data"), list):
+            return result["data"]
+        log.debug("get_print_queue returned no jobs.")
+        return []
+
+    def ack_print_job(self, job_id: str, result: str) -> Optional[dict]:
+        """
+        POST /api/v1/kiosk/print-queue/{job_id}/ack
+        Body: {"result": "printed" | "failed"}
+
+        The HMAC-signed path is the full path including the job id.
+        Returns parsed response dict or None on failure.
+        """
+        return self._post(
+            f"/api/v1/kiosk/print-queue/{job_id}/ack",
+            {"result": result},
+        )
+
+    def get_realtime_token(self) -> Optional[dict]:
+        """
+        GET /api/v1/kiosk/realtime-token
+
+        Expected response:
+          {
+            "data": {
+              "token": "<scoped supabase JWT>",
+              "supabase_url": "https://xxxx.supabase.co",
+              "anon_key": "<anon key>",
+              "expires_in": 3600
+            }
+          }
+
+        Returns the data dict or None on failure.
+        """
+        result = self._get("/api/v1/kiosk/realtime-token")
+        if result and isinstance(result.get("data"), dict):
+            return result["data"]
+        log.debug("get_realtime_token returned no data.")
+        return None
+
     def fetch_active_tokens(self, canteen_id: str) -> list:
         """
         POST /api/v1/kiosk/cache

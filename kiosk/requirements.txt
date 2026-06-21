@@ -7,3 +7,4 @@ Pillow==11.1.0
 pygame==2.6.1
 evdev==1.7.1
 schedule==1.2.2
+realtime==2.0.5

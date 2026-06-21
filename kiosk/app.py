@@ -128,6 +128,10 @@ class KioskApp:
         self.scanner = BarcodeScanner()
         self.scanner.on_scan = self.handle_scan
 
+        log.info("Initialising print worker …")
+        from print_worker import PrintWorker
+        self.print_worker = PrintWorker(self.api, self.printer)
+
         # Daemon threads (started in run())
         self._threads: list[threading.Thread] = []
         self._running = False
@@ -147,11 +151,16 @@ class KioskApp:
         self._start_daemon("sync_loop", self._sync_loop)
         self._start_daemon("heartbeat_loop", self._heartbeat_loop)
 
+        # Cash-bill print worker (realtime + 45s safety poll). Owns its own
+        # daemon threads internally.
+        self.print_worker.start()
+
         log.info("Starting display main loop …")
         self.display.run()  # Blocks until window is closed
 
         # If display exits, stop background threads
         self._running = False
+        self.print_worker.stop()
         log.info("Display closed — application shutting down.")
 
     # ------------------------------------------------------------------
