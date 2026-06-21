@@ -155,56 +155,6 @@ class ThermalPrinter:
                 pass
             return False
 
-    def print_cash_bill(self, job: dict) -> bool:
-        """
-        Print a cash bill for a staff-approved order.
-
-        `job` is a print-queue item shaped like:
-          {
-            "id": "<job uuid>",
-            "order_id": "<order uuid>",
-            "order": {
-              "order_number": "CB-...",
-              "total_paise": 9450,
-              "subtotal_paise": 9000,
-              "tax_paise": 450,
-              "discount_paise": 0,
-              "order_items": [
-                {"menu_item_name": "...", "quantity": 2,
-                 "unit_price_paise": 4500, "total_price_paise": 9000}
-              ]
-            }
-          }
-
-        Reuses the exact same receipt renderer as scans (`print_receipt`) by
-        adapting `job["order"]` into the dict shape that renderer expects
-        (`order_items`→`items`, `menu_item_name`→`name`). Returns True on
-        success, False on failure.
-        """
-        order = job.get("order") or {}
-
-        items = []
-        for it in order.get("order_items", []):
-            items.append(
-                {
-                    "name": it.get("menu_item_name", "Item"),
-                    "quantity": it.get("quantity", 1),
-                    "unit_price_paise": it.get("unit_price_paise", 0),
-                    "total_price_paise": it.get("total_price_paise", 0),
-                }
-            )
-
-        order_data = {
-            "order_number": order.get("order_number", ""),
-            "items": items,
-            "subtotal_paise": order.get("subtotal_paise", 0),
-            "tax_paise": order.get("tax_paise", 0),
-            "discount_paise": order.get("discount_paise", 0),
-            "total_paise": order.get("total_paise", 0),
-        }
-
-        return self.print_receipt(order_data)
-
     def _do_print_image(self, d: dict) -> None:
         """Render the receipt as a bitmap with a faint diagonal MUNCHADDA
         watermark, then print it as a raster image. Makes the bill look official

@@ -29,12 +29,11 @@ export default function CashPaymentsPage() {
     await axios.post(`/api/v1/admin/orders/${id}/approve-cash`);
     qc.invalidateQueries({ queryKey: ['cash-orders'] });
   };
-  const reprint = async (id: string) => { await axios.post(`/api/v1/admin/orders/${id}/reprint`); };
   const rows = data?.data ?? [];
   return (
     <div className="space-y-4">
       <h1 className="font-display text-2xl font-semibold tracking-tight">Cash Payments</h1>
-      <p className="text-sm text-text-3">Approve cash orders after collecting payment. The bill prints at the counter on approval.</p>
+      <p className="text-sm text-text-3">Approve cash orders after collecting payment. The order is then confirmed and the student&apos;s pickup QR unlocks — they collect at the kiosk like an online order.</p>
       {isLoading ? (
         <p className="text-text-3 text-sm">Loading…</p>
       ) : rows.length === 0 ? (
@@ -52,8 +51,7 @@ export default function CashPaymentsPage() {
                 <p className="text-xs text-text-3">{formatDateTime(o.created_at)}</p>
               </div>
               <div className="text-sm font-semibold text-text">{formatCurrency(o.total_paise)}</div>
-              <Button onClick={() => approve(o.id)}>Approve &amp; print</Button>
-              <Button variant="outline" onClick={() => reprint(o.id)}>Reprint</Button>
+              <Button onClick={() => approve(o.id)}>Approve</Button>
             </div>
           ))}
         </div>
