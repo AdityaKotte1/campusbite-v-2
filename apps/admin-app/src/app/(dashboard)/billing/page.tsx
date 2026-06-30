@@ -220,10 +220,12 @@ export default function BillingPage() {
                 <span className="tabular-nums">-{formatPaise(quote.monthlyBasePaise * quote.months - quote.subtotalPaise)}</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-text-2">GST (18%)</span>
-              <span className="tabular-nums">{formatPaise(quote.gstPaise)}</span>
-            </div>
+            {quote.gstPaise > 0 && (
+              <div className="flex justify-between">
+                <span className="text-text-2">GST (18%)</span>
+                <span className="tabular-nums">{formatPaise(quote.gstPaise)}</span>
+              </div>
+            )}
             <div className="flex items-baseline justify-between pt-2 mt-1 border-t border-border">
               <span className="font-semibold text-text">Total</span>
               <span className="font-display text-xl font-semibold text-text tabular-nums tracking-tight">{formatPaise(quote.totalPaise)}</span>
@@ -246,7 +248,7 @@ export default function BillingPage() {
           <tbody>
             {me.invoices.length === 0 ? (
               <tr>
-                <td className="px-5 py-10 text-center text-text-3">No invoices yet</td>
+                <td colSpan={5} className="px-5 py-10 text-center text-text-3">No invoices yet</td>
               </tr>
             ) : (
               me.invoices.map((inv) => (
@@ -258,6 +260,14 @@ export default function BillingPage() {
                     <Badge variant={inv.status === 'paid' ? 'success' : inv.status === 'pending' ? 'warning' : 'default'}>
                       {inv.status}
                     </Badge>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <a
+                      href={`/billing-invoice/${inv.id}`}
+                      className="text-brand text-xs font-semibold hover:underline cursor-pointer"
+                    >
+                      Download
+                    </a>
                   </td>
                 </tr>
               ))

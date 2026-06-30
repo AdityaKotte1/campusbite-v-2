@@ -6,6 +6,12 @@ export type BillingCycle = 'monthly' | 'biannual' | 'annual';
 export const BASE_PER_CANTEEN_PAISE = 200000; // ₹2,000 / canteen / month
 export const GST_RATE = 0.18;
 
+// GST master switch for subscription billing. OFF for now → institutes are
+// charged the base amount only and invoices store gst_paise = 0. Flip to `true`
+// and redeploy to start adding 18% GST to new charges; invoices created after
+// that store + display the GST line. (Past invoices keep what they were charged.)
+export const SUBSCRIPTION_GST_ENABLED = false;
+
 export const CYCLE_CONFIG: Record<BillingCycle, { months: number; discountPct: number; label: string }> = {
   monthly: { months: 1, discountPct: 0, label: 'Monthly' },
   biannual: { months: 6, discountPct: 0.1, label: '6 Months (10% off)' },
@@ -57,7 +63,7 @@ export function computeSubscription(
   const monthlyBase = Math.max(1, canteens) * BASE_PER_CANTEEN_PAISE + studentTierAddonPaise(students);
   const gross = monthlyBase * c.months;
   const subtotal = Math.round(gross * (1 - c.discountPct));
-  const gst = Math.round(subtotal * GST_RATE);
+  const gst = SUBSCRIPTION_GST_ENABLED ? Math.round(subtotal * GST_RATE) : 0;
   return {
     cycle,
     canteens,
