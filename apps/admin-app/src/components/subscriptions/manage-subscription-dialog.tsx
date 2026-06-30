@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,16 @@ export function ManageSubscriptionDialog({
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [invoices, setInvoices] = useState<
+    Array<{ id: string; billing_cycle: string; total_paise: number; status: string; created_at: string }>
+  >([]);
+
+  useEffect(() => {
+    axios
+      .get('/api/v1/admin/subscriptions/invoices', { params: { institute_id: row.institute_id } })
+      .then((r) => setInvoices(r.data?.data ?? []))
+      .catch(() => setInvoices([]));
+  }, [row.institute_id]);
 
   const quote = computeSubscription(row.canteen_count, row.student_count, cycle);
 
@@ -111,10 +121,12 @@ export function ManageSubscriptionDialog({
               </span>
               <span className="tabular-nums">{formatPaise(quote.subtotalPaise)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-text-2">GST (18%)</span>
-              <span className="tabular-nums">{formatPaise(quote.gstPaise)}</span>
-            </div>
+            {quote.gstPaise > 0 && (
+              <div className="flex justify-between">
+                <span className="text-text-2">GST (18%)</span>
+                <span className="tabular-nums">{formatPaise(quote.gstPaise)}</span>
+              </div>
+            )}
             <div className="flex items-baseline justify-between pt-2 mt-1 border-t border-border">
               <span className="font-semibold text-text">Total</span>
               <span className="font-display text-lg font-semibold text-text tabular-nums tracking-tight">{formatPaise(quote.totalPaise)}</span>
@@ -142,6 +154,30 @@ export function ManageSubscriptionDialog({
               </Button>
             </div>
           </div>
+
+          {/* Invoices for this institute */}
+          {invoices.length > 0 && (
+            <div className="pt-1">
+              <p className="eyebrow mb-1.5">Invoices</p>
+              <div className="rounded-xl border border-border divide-y divide-border max-h-40 overflow-y-auto">
+                {invoices.map((inv) => (
+                  <div key={inv.id} className="flex items-center gap-2 px-3 py-2 text-xs">
+                    <span className="text-text-3 tabular-nums">{new Date(inv.created_at).toLocaleDateString('en-IN')}</span>
+                    <span className="flex-1 capitalize text-text-2 truncate">{inv.billing_cycle}</span>
+                    <span className="tabular-nums font-medium text-text">{formatPaise(inv.total_paise)}</span>
+                    <a
+                      href={`/billing-invoice/${inv.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand font-semibold hover:underline"
+                    >
+                      Download
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
