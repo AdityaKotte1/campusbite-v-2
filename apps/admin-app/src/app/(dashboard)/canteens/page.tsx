@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import {
   Pencil, PowerOff, Power, ToggleLeft, ToggleRight, Loader2,
-  Store, Clock, MapPin, Upload, ImageIcon, ChevronDown, X,
+  Store, Clock, MapPin, Upload, ImageIcon, ChevronDown, Plus, X,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/auth-store';
 import type { Canteen, Institute } from '@/types';
+import { AddCanteenDialog } from '@/components/canteens/add-canteen-dialog';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,6 +45,7 @@ export default function CanteensPage() {
 
   const [selectedInstituteId, setSelectedInstituteId] = useState<string>('all');
   const [editCanteen, setEditCanteen] = useState<CanteenWithStats | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch institutes (super_admin only — for the filter dropdown)
@@ -99,30 +101,37 @@ export default function CanteensPage() {
 
   return (
     <div className="space-y-5">
-      {/* Filters row */}
-      {isSuperAdmin && (
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <select
-              value={selectedInstituteId}
-              onChange={(e) => setSelectedInstituteId(e.target.value)}
-              aria-label="Filter by institute"
-              className="h-9 pl-3 pr-8 rounded-lg border border-border-2 bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand appearance-none transition-all"
-            >
-              <option value="all">All Institutes</option>
-              {institutes.map((inst) => (
-                <option key={inst.id} value={inst.id}>
-                  {inst.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none" />
-          </div>
-          <p className="font-display text-sm font-semibold tracking-tight text-text-2">
-            <span className="tabular-nums">{canteens.length}</span> canteen{canteens.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-      )}
+      {/* Header row: filters (super admin) + Add (canteen admin) */}
+      <div className="flex items-center gap-3">
+        {isSuperAdmin && (
+          <>
+            <div className="relative">
+              <select
+                value={selectedInstituteId}
+                onChange={(e) => setSelectedInstituteId(e.target.value)}
+                aria-label="Filter by institute"
+                className="h-9 pl-3 pr-8 rounded-lg border border-border-2 bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand appearance-none transition-all"
+              >
+                <option value="all">All Institutes</option>
+                {institutes.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3 pointer-events-none" />
+            </div>
+            <p className="font-display text-sm font-semibold tracking-tight text-text-2">
+              <span className="tabular-nums">{canteens.length}</span> canteen{canteens.length !== 1 ? 's' : ''}
+            </p>
+          </>
+        )}
+        {!isSuperAdmin && (
+          <Button size="sm" className="ml-auto" onClick={() => setShowAdd(true)}>
+            <Plus className="w-4 h-4" /> Add Canteen
+          </Button>
+        )}
+      </div>
 
       {/* Cards grid */}
       {isLoading ? (
@@ -144,7 +153,7 @@ export default function CanteensPage() {
           <p className="text-sm text-text-3">
             {isSuperAdmin
               ? 'Add a canteen from the Institutes page.'
-              : 'No canteens are assigned to your institute yet.'}
+              : 'No canteens yet. Use “Add Canteen” above to add your first one.'}
           </p>
         </div>
       ) : (
@@ -168,6 +177,17 @@ export default function CanteensPage() {
           onClose={() => setEditCanteen(null)}
           onSuccess={() => {
             setEditCanteen(null);
+            invalidate();
+          }}
+        />
+      )}
+
+      {/* Add dialog (canteen admin self-serve) */}
+      {showAdd && (
+        <AddCanteenDialog
+          onClose={() => setShowAdd(false)}
+          onSuccess={() => {
+            setShowAdd(false);
             invalidate();
           }}
         />
