@@ -128,9 +128,9 @@ export async function POST(request: NextRequest) {
     .eq('id', user.id)
     .single();
 
-  if (profileError || !profile || !['super_admin', 'canteen_admin'].includes(profile.role) || !profile.is_active) {
+  if (profileError || !profile || profile.role !== 'super_admin' || !profile.is_active) {
     return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Forbidden' } },
+      { success: false, error: { code: 'FORBIDDEN', message: 'Canteen admins must add canteens from Billing (paid add-on). Only super admins create canteens here.' } },
       { status: 403 }
     );
   }
@@ -142,14 +142,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { success: false, error: { code: 'VALIDATION', message: 'institute_id, name, location, opening_time, closing_time are required' } },
       { status: 400 }
-    );
-  }
-
-  // canteen_admin can only create canteens under their own institute
-  if (profile.role === 'canteen_admin' && profile.institute_id !== institute_id) {
-    return NextResponse.json(
-      { success: false, error: { code: 'FORBIDDEN', message: 'Cannot create canteen for a different institute' } },
-      { status: 403 }
     );
   }
 
