@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { createServiceClient } from '@/lib/supabase/server';
-import { getInstituteCounts, activateFromInvoice } from '@/lib/subscription-actions';
+import { getInstituteCounts, activateFromInvoice, activateAddonCanteen } from '@/lib/subscription-actions';
 
 // Razorpay webhook for INSTITUTE SUBSCRIPTION payments (platform account).
 // Backstop for the synchronous /verify handler: if the institute admin closes
@@ -57,8 +57,13 @@ export async function POST(request: Request) {
 
         // Only act on a still-pending invoice (idempotent vs the /verify path).
         if (invoice && invoice.status === 'pending') {
-          const counts = await getInstituteCounts(service, invoice.institute_id);
-          await activateFromInvoice(service, invoice, counts.canteens, counts.students, paymentId);
+          if (invoice.canteen_id) {
+            // Add-on canteen payment — activate the canteen, don't touch the plan.
+            await activateAddonCanteen(service, invoice.institute_id, invoice.canteen_id, invoice.id, paymentId);
+          } else {
+            const counts = await getInstituteCounts(service, invoice.institute_id);
+            await activateFromInvoice(service, invoice, counts.canteens, counts.students, paymentId);
+          }
         }
       }
     }

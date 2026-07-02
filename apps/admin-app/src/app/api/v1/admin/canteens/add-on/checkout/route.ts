@@ -46,13 +46,23 @@ export async function POST(request: NextRequest) {
 
   const quote = computeCanteenAddon(sub.billing_cycle as BillingCycle, new Date(sub.current_period_start), periodEnd as Date, now);
 
-  // Clean up any prior abandoned pending canteen (+ its still-pending invoice).
+  // Clean up prior ABANDONED pending canteens only. Never delete a canteen or
+  // invoice that a captured payment may reference: if any invoice for the
+  // canteen already has a razorpay_payment_id, leave it for verify/webhook to
+  // activate. Only truly-unpaid (no payment id) pending canteens are removed.
   const { data: stale } = await service
     .from('canteens')
     .select('id')
     .eq('institute_id', instituteId)
     .eq('billing_state', 'pending_payment');
   for (const c of stale ?? []) {
+    const { data: captured } = await service
+      .from('subscription_invoices')
+      .select('id')
+      .eq('canteen_id', c.id)
+      .not('razorpay_payment_id', 'is', null)
+      .limit(1);
+    if (captured && captured.length > 0) continue; // a payment may reference this — keep it
     await service.from('subscription_invoices').delete().eq('canteen_id', c.id).eq('status', 'pending');
     await service.from('canteens').delete().eq('id', c.id).eq('billing_state', 'pending_payment');
   }

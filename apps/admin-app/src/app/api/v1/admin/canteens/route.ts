@@ -47,12 +47,12 @@ export async function GET(request: NextRequest) {
     if (!profile.assigned_canteen_id) {
       return NextResponse.json({ success: true, data: [] });
     }
-    query = query.eq('id', profile.assigned_canteen_id);
+    query = query.eq('id', profile.assigned_canteen_id).neq('billing_state', 'pending_payment');
   } else if (profile.role === 'canteen_admin') {
     if (!profile.institute_id) {
       return NextResponse.json({ success: true, data: [] });
     }
-    query = query.eq('institute_id', profile.institute_id);
+    query = query.eq('institute_id', profile.institute_id).neq('billing_state', 'pending_payment');
   } else {
     // super_admin — unrestricted listing, optionally NARROWED by ?institute_id=xxx
     if (instituteId) {

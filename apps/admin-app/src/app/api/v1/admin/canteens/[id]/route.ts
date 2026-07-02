@@ -15,7 +15,7 @@ async function getCallerProfile(userId: string) {
 
 async function canManageCanteen(
   profile: { role: string; institute_id: string | null; assigned_canteen_id: string | null },
-  canteen: { id: string; institute_id: string }
+  canteen: { id: string; institute_id: string; billing_state?: string }
 ): Promise<boolean> {
   if (profile.role === 'super_admin') return true;
   if (profile.role === 'canteen_admin') return profile.institute_id === canteen.institute_id;
@@ -100,7 +100,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   // Fetch canteen to verify ownership
   const { data: canteen } = await service
     .from('canteens')
-    .select('id, institute_id')
+    .select('id, institute_id, billing_state')
     .eq('id', params.id)
     .single();
 
@@ -114,6 +114,16 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   if (!(await canManageCanteen(profile, canteen))) {
     return NextResponse.json(
       { success: false, error: { code: 'FORBIDDEN', message: 'Cannot manage this canteen' } },
+      { status: 403 }
+    );
+  }
+
+  // A pending-payment canteen (self-serve add-on awaiting payment) must not be
+  // mutated — especially activated — by anyone but a super_admin. It goes live
+  // only through the paid add-on verify flow, never a manual is_active toggle.
+  if (canteen.billing_state === 'pending_payment' && profile.role !== 'super_admin') {
+    return NextResponse.json(
+      { success: false, error: { code: 'PENDING_PAYMENT', message: 'This canteen is awaiting payment. Complete the payment to activate it.' } },
       { status: 403 }
     );
   }
