@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { verifyRazorpaySignature } from '@/lib/razorpay';
-import { getInstituteCounts, getCallerInstitute, activateFromInvoice } from '@/lib/subscription-actions';
+import { getInstituteCounts, getCallerInstitute, activateFromInvoice, activateAddonCanteen } from '@/lib/subscription-actions';
 
 // Verify a subscription payment and activate the institute's subscription.
 export async function POST(request: NextRequest) {
@@ -41,6 +41,24 @@ export async function POST(request: NextRequest) {
   }
   if (invoice.status === 'paid') {
     return NextResponse.json({ success: true, data: { already: true } }); // idempotent
+  }
+
+  // Add-on canteen payment: activate that canteen and re-sync the recurring record.
+  if (invoice.canteen_id) {
+    try {
+      await activateAddonCanteen(service, instituteId, invoice.canteen_id, invoice.id, razorpay_payment_id);
+    } catch (e) {
+      console.error('[subscriptions/verify] canteen add-on activation failed', e);
+      return NextResponse.json({ success: false, error: { code: 'ACTIVATION_FAILED', message: 'Payment captured but activation failed. Contact support.' } }, { status: 500 });
+    }
+    await service.from('audit_logs').insert({
+      user_id: user.id,
+      action: 'canteen.addon.paid',
+      entity_type: 'canteen',
+      entity_id: invoice.canteen_id,
+      metadata: { total_paise: invoice.total_paise, razorpay_payment_id },
+    });
+    return NextResponse.json({ success: true, data: { canteen_id: invoice.canteen_id, addon: true } });
   }
 
   const counts = await getInstituteCounts(service, instituteId);
