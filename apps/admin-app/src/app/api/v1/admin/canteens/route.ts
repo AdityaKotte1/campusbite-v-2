@@ -107,7 +107,8 @@ export async function GET(request: NextRequest) {
 }
 
 // ─── POST /api/v1/admin/canteens ─────────────────────────────────────────────
-// super_admin + canteen_admin — create a canteen
+// super_admin only — create a canteen (used from the Institutes page).
+// canteen_admin adds canteens via the paid add-on flow (/canteens/add-on).
 // Body: { institute_id, name, location, description?, opening_time, closing_time }
 
 export async function POST(request: NextRequest) {
