@@ -89,3 +89,37 @@ export function formatPaise(paise: number): string {
     })
   );
 }
+
+export interface CanteenAddonQuote {
+  remainingDays: number;
+  totalDays: number;
+  subtotalPaise: number;
+  gstPaise: number;
+  totalPaise: number;
+}
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Prorated cost to add ONE canteen for the remainder of the current plan
+ * period, at the same cycle discount. At renewal the canteen is included at
+ * full rate, so this only charges the leftover days of the running period.
+ */
+export function computeCanteenAddon(
+  cycle: BillingCycle,
+  periodStart: Date,
+  periodEnd: Date,
+  now: Date
+): CanteenAddonQuote {
+  const c = CYCLE_CONFIG[cycle];
+  const fullPeriodPerCanteen = Math.round(BASE_PER_CANTEEN_PAISE * c.months * (1 - c.discountPct));
+
+  const totalDays = Math.max(1, Math.round((periodEnd.getTime() - periodStart.getTime()) / MS_PER_DAY));
+  const rawRemaining = Math.ceil((periodEnd.getTime() - now.getTime()) / MS_PER_DAY);
+  const remainingDays = Math.min(totalDays, Math.max(0, rawRemaining));
+
+  const subtotalPaise = Math.round((fullPeriodPerCanteen * remainingDays) / totalDays);
+  const gstPaise = SUBSCRIPTION_GST_ENABLED ? Math.round(subtotalPaise * GST_RATE) : 0;
+
+  return { remainingDays, totalDays, subtotalPaise, gstPaise, totalPaise: subtotalPaise + gstPaise };
+}
