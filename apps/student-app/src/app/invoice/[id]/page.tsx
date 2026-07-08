@@ -108,10 +108,12 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
             <span className="text-text-2">Subtotal</span>
             <span className="tabular-nums">{formatPrice(order.subtotal_paise)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-text-2">GST</span>
-            <span className="tabular-nums">{formatPrice(order.tax_paise)}</span>
-          </div>
+          {order.tax_paise > 0 && (
+            <div className="flex justify-between">
+              <span className="text-text-2">GST</span>
+              <span className="tabular-nums">{formatPrice(order.tax_paise)}</span>
+            </div>
+          )}
           {order.discount_paise > 0 && (
             <div className="flex justify-between">
               <span className="text-green-dark">Discount</span>

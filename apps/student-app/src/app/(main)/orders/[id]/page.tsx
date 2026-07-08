@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, QrCode, List, AlertCircle, Loader2 } from 'lucide-react';
@@ -9,8 +9,9 @@ import { QRDisplay } from '@/components/order/qr-display';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/client';
 import { formatPrice, formatDate } from '@/lib/formatting';
-import { ORDER_STATUS_LABELS, CANCELLABLE_STATUSES, POLLING_INTERVAL_MS } from '@/lib/constants';
+import { ORDER_STATUS_LABELS, CANCELLABLE_STATUSES, SAFETY_POLL_INTERVAL_MS, REALTIME_FALLBACK_POLL_INTERVAL_MS } from '@/lib/constants';
 import type { Order } from '@/types';
 
 async function fetchOrder(id: string): Promise<Order> {
@@ -43,6 +44,10 @@ export default function OrderDetailPage({ params }: Props) {
   const [activeTab, setActiveTab] = useState<'status' | 'qr'>('status');
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  // Track whether Realtime actually reached SUBSCRIBED. If it never connects (the
+  // publication migration isn't applied, socket dropped), we poll faster so we
+  // don't silently regress to the slow 60s backstop.
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
 
   const { data: order, isLoading, isError } = useQuery({
     queryKey: ['order', id],
@@ -51,9 +56,38 @@ export default function OrderDetailPage({ params }: Props) {
       const data = query.state.data;
       if (!data) return false;
       const active = ['payment_pending', 'confirmed', 'preparing', 'ready'];
-      return active.includes(data.status) ? POLLING_INTERVAL_MS : false;
+      if (!active.includes(data.status)) return false;
+      // Realtime (below) pushes status changes instantly; when it's connected this
+      // slow poll is only a backstop and returns 304 unless something changed. When
+      // Realtime is NOT connected, fall back to a faster 30s poll.
+      return realtimeConnected ? SAFETY_POLL_INTERVAL_MS : REALTIME_FALLBACK_POLL_INTERVAL_MS;
     },
   });
+
+  // Instant order-status updates via Supabase Realtime. The browser client
+  // carries the student's session JWT, and RLS (orders_own_read) ensures this
+  // socket only ever receives THIS user's rows. On any update to this order we
+  // invalidate the query so react-query refetches the authoritative row (which
+  // also picks up a freshly-minted QR token when payment flips to 'paid').
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`order-${id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['order', id] });
+        }
+      )
+      .subscribe((status) => {
+        setRealtimeConnected(status === 'SUBSCRIBED');
+      });
+    return () => {
+      setRealtimeConnected(false);
+      supabase.removeChannel(channel);
+    };
+  }, [id, queryClient]);
 
   const cancelMutation = useMutation({
     mutationFn: () => cancelOrder(id),
@@ -198,10 +232,12 @@ export default function OrderDetailPage({ params }: Props) {
                 <span className="text-text-2">Subtotal</span>
                 <span className="tabular-nums">{formatPrice(order.subtotal_paise)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-text-2">GST</span>
-                <span className="tabular-nums">{formatPrice(order.tax_paise)}</span>
-              </div>
+              {order.tax_paise > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-2">GST</span>
+                  <span className="tabular-nums">{formatPrice(order.tax_paise)}</span>
+                </div>
+              )}
               {order.discount_paise > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-green-dark">Discount</span>
