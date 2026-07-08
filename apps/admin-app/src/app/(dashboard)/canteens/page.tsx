@@ -6,6 +6,7 @@ import axios from 'axios';
 import {
   Pencil, PowerOff, Power, ToggleLeft, ToggleRight, Loader2,
   Store, Clock, MapPin, Upload, ImageIcon, ChevronDown, Plus, X,
+  CreditCard, Trash2, AlertTriangle, Banknote, Percent,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/auth-store';
 import type { Canteen, Institute } from '@/types';
 import { AddCanteenDialog } from '@/components/canteens/add-canteen-dialog';
+import { payAndVerify } from '@/lib/razorpay-checkout';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,6 +48,7 @@ export default function CanteensPage() {
   const [selectedInstituteId, setSelectedInstituteId] = useState<string>('all');
   const [editCanteen, setEditCanteen] = useState<CanteenWithStats | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [resumingId, setResumingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch institutes (super_admin only — for the filter dropdown)
@@ -85,6 +88,18 @@ export default function CanteensPage() {
     }
   };
 
+  // Toggle cash_payments_enabled (defaults to true when the column is absent/null)
+  const toggleCash = async (canteen: CanteenWithStats) => {
+    try {
+      await axios.put(`/api/v1/admin/canteens/${canteen.id}`, {
+        cash_payments_enabled: canteen.cash_payments_enabled === false,
+      });
+      invalidate();
+    } catch {
+      alert('Failed to update cash payments setting.');
+    }
+  };
+
   // Toggle is_active
   const toggleActive = async (canteen: CanteenWithStats) => {
     const action = canteen.is_active ? 'deactivate' : 'activate';
@@ -99,10 +114,42 @@ export default function CanteensPage() {
     }
   };
 
+  // Complete an interrupted add-on payment. The server recomputes a fresh
+  // prorated quote and returns a new order; verify then activates the canteen.
+  const handleResume = async (canteen: CanteenWithStats) => {
+    setResumingId(canteen.id);
+    try {
+      const { data: co } = await axios.post(`/api/v1/admin/canteens/${canteen.id}/resume-payment`);
+      const order = co.data;
+      if (order.free) { invalidate(); return; } // ₹0 prorate → already active
+      await payAndVerify(order, `Add canteen: ${canteen.name}`);
+      invalidate();
+    } catch (e) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.error?.message ?? 'Payment failed' : (e as Error).message;
+      if (msg !== 'Payment cancelled') alert(msg);
+    } finally {
+      setResumingId(null);
+    }
+  };
+
+  // Discard an unpaid pending canteen (hard-delete on the server).
+  const handleDiscard = async (canteen: CanteenWithStats) => {
+    if (!confirm(`Discard "${canteen.name}"? This removes the unpaid canteen — you can add it again later.`)) return;
+    try {
+      await axios.delete(`/api/v1/admin/canteens/${canteen.id}`);
+      invalidate();
+    } catch {
+      alert('Failed to discard canteen.');
+    }
+  };
+
+  // Only one pending canteen at a time — block adding another while one exists.
+  const hasPending = canteens.some((c) => c.billing_state === 'pending_payment');
+
   return (
     <div className="space-y-5">
       {/* Header row: filters (super admin) + Add (canteen admin) */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {isSuperAdmin && (
           <>
             <div className="relative">
@@ -127,9 +174,19 @@ export default function CanteensPage() {
           </>
         )}
         {!isSuperAdmin && (
-          <Button size="sm" className="ml-auto" onClick={() => setShowAdd(true)}>
-            <Plus className="w-4 h-4" /> Add Canteen
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            {hasPending && (
+              <span className="text-xs text-amber-dark hidden sm:inline">Finish or discard your pending canteen first.</span>
+            )}
+            <Button
+              size="sm"
+              onClick={() => setShowAdd(true)}
+              disabled={hasPending}
+              title={hasPending ? 'Finish or discard your pending canteen first' : undefined}
+            >
+              <Plus className="w-4 h-4" /> Add Canteen
+            </Button>
+          </div>
         )}
       </div>
 
@@ -162,9 +219,14 @@ export default function CanteensPage() {
             <CanteenCard
               key={canteen.id}
               canteen={canteen}
+              isSuperAdmin={isSuperAdmin}
+              resuming={resumingId === canteen.id}
               onEdit={() => setEditCanteen(canteen)}
               onToggleOpen={() => toggleOpen(canteen)}
+              onToggleCash={() => toggleCash(canteen)}
               onToggleActive={() => toggleActive(canteen)}
+              onResume={() => handleResume(canteen)}
+              onDiscard={() => handleDiscard(canteen)}
             />
           ))}
         </div>
@@ -174,6 +236,7 @@ export default function CanteensPage() {
       {editCanteen && (
         <EditCanteenDialog
           canteen={editCanteen}
+          isSuperAdmin={isSuperAdmin}
           onClose={() => setEditCanteen(null)}
           onSuccess={() => {
             setEditCanteen(null);
@@ -200,17 +263,90 @@ export default function CanteensPage() {
 
 function CanteenCard({
   canteen,
+  isSuperAdmin,
+  resuming,
   onEdit,
   onToggleOpen,
+  onToggleCash,
   onToggleActive,
+  onResume,
+  onDiscard,
 }: {
   canteen: CanteenWithStats;
+  isSuperAdmin: boolean;
+  resuming: boolean;
   onEdit: () => void;
   onToggleOpen: () => void;
+  onToggleCash: () => void;
   onToggleActive: () => void;
+  onResume: () => void;
+  onDiscard: () => void;
 }) {
   const formatCurrency = (paise: number) =>
     '₹' + (paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
+  // Pending-payment canteen: an add-on whose payment was left unfinished. It is
+  // not live (hidden from students); the admin resumes payment or discards it.
+  if (canteen.billing_state === 'pending_payment') {
+    return (
+      <div className="bg-surface rounded-2xl border border-amber/40 overflow-hidden">
+        <div className="relative h-36 bg-amber-pale overflow-hidden flex items-center justify-center">
+          <Store className="w-10 h-10 text-amber-dark opacity-40" />
+          <div className="absolute top-2 left-2">
+            <Badge variant="warning" className="gap-1.5 shadow-sm">
+              <AlertTriangle className="w-3 h-3" /> Payment pending
+            </Badge>
+          </div>
+        </div>
+        <div className="p-4 space-y-3">
+          <div>
+            <h3 className="font-display font-semibold tracking-tight text-text text-base">{canteen.name}</h3>
+            {canteen.description && <p className="text-xs text-text-3 mt-0.5 line-clamp-2">{canteen.description}</p>}
+          </div>
+          <div className="space-y-1.5">
+            {canteen.location && (
+              <div className="flex items-center gap-1.5 text-xs text-text-2">
+                <MapPin className="w-3.5 h-3.5 text-text-3 shrink-0" />
+                <span className="truncate">{canteen.location}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-xs text-text-2">
+              <Clock className="w-3.5 h-3.5 text-text-3 shrink-0" />
+              <span>{canteen.opens_at} – {canteen.closes_at}</span>
+            </div>
+          </div>
+          <p className="text-xs text-text-3">
+            {isSuperAdmin
+              ? 'Not live yet — yet to be paid by the institute.'
+              : 'Not live yet — complete the prorated payment to activate this canteen.'}
+          </p>
+          <div className="flex items-center gap-2 pt-1 border-t border-border">
+            {isSuperAdmin ? (
+              <div className="flex-1 flex items-center gap-1.5 text-xs font-medium text-amber-dark">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                Yet to be paid by the institute
+              </div>
+            ) : (
+              <Button onClick={onResume} disabled={resuming} size="sm" className="flex-1">
+                {resuming ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                Complete Payment
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onDiscard}
+              disabled={resuming}
+              title="Discard this pending canteen"
+              className="text-red-400 hover:text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -332,6 +468,34 @@ function CanteenCard({
             )}
           </Button>
         </div>
+
+        {/* Pay-by-cash toggle — cash is enabled unless explicitly turned off */}
+        <button
+          onClick={onToggleCash}
+          title={canteen.cash_payments_enabled === false ? 'Enable cash payments for this canteen' : 'Disable cash payments for this canteen'}
+          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors w-full justify-center ${
+            canteen.cash_payments_enabled === false
+              ? 'bg-bg-2 text-text-2 border-border hover:bg-bg'
+              : 'bg-green-light text-green-dark border-green/20 hover:bg-green-light/70'
+          }`}
+        >
+          <Banknote className="w-3.5 h-3.5" />
+          {canteen.cash_payments_enabled === false ? 'Cash payments off' : 'Cash payments on'}
+        </button>
+
+        {/* GST status — read-only here; super_admin edits it in the Edit dialog */}
+        <div
+          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border w-full justify-center ${
+            canteen.gst_enabled === false
+              ? 'bg-bg-2 text-text-2 border-border'
+              : 'bg-green-light text-green-dark border-green/20'
+          }`}
+        >
+          <Percent className="w-3.5 h-3.5" />
+          {canteen.gst_enabled === false
+            ? 'GST off'
+            : `GST ${Number(canteen.tax_percentage ?? 5)}%`}
+        </div>
       </div>
     </div>
   );
@@ -341,10 +505,12 @@ function CanteenCard({
 
 function EditCanteenDialog({
   canteen,
+  isSuperAdmin,
   onClose,
   onSuccess,
 }: {
   canteen: CanteenWithStats;
+  isSuperAdmin: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -352,6 +518,8 @@ function EditCanteenDialog({
   const [imageUploading, setImageUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [serverError, setServerError] = useState('');
+  const [gstEnabled, setGstEnabled] = useState(canteen.gst_enabled !== false);
+  const [taxPercentage, setTaxPercentage] = useState(String(canteen.tax_percentage ?? 5));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -399,6 +567,9 @@ function EditCanteenDialog({
         opening_time: values.opening_time,
         closing_time: values.closing_time,
         image_url: imageUrl || null,
+        ...(isSuperAdmin
+          ? { gst_enabled: gstEnabled, tax_percentage: Number(taxPercentage) }
+          : {}),
       });
       onSuccess();
     } catch (err: unknown) {
@@ -411,7 +582,7 @@ function EditCanteenDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
-      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-lg my-4">
+      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-lg my-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="px-5 py-4 border-b border-border flex items-start justify-between">
           <div>
@@ -528,6 +699,49 @@ function EditCanteenDialog({
               className="w-full px-3 py-2 rounded-lg border border-border-2 bg-surface text-sm text-text placeholder:text-text-3 hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand resize-none transition-all"
             />
           </div>
+
+          {/* GST billing — super_admin only */}
+          {isSuperAdmin && (
+            <div className="border border-border rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-text">GST billing</p>
+                  <p className="text-xs text-text-3 mt-0.5">
+                    When off, students are charged no GST at this canteen.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setGstEnabled((v) => !v)}
+                  aria-pressed={gstEnabled}
+                  className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                    gstEnabled
+                      ? 'bg-green-light text-green-dark border-green/20 hover:bg-green-light/70'
+                      : 'bg-bg-2 text-text-2 border-border hover:bg-bg'
+                  }`}
+                >
+                  {gstEnabled ? (
+                    <><ToggleRight className="w-3.5 h-3.5" /> On</>
+                  ) : (
+                    <><ToggleLeft className="w-3.5 h-3.5" /> Off</>
+                  )}
+                </button>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1.5">GST percentage</label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.01}
+                  value={taxPercentage}
+                  onChange={(e) => setTaxPercentage(e.target.value)}
+                  disabled={!gstEnabled}
+                  placeholder="5"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-1">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
