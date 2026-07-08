@@ -55,9 +55,8 @@ Because the new column defaults to `true` and every existing row already has `ta
 Follow the existing `discount_paise > 0` gating pattern. Gate the GST line on `tax_paise > 0` in:
 - `apps/student-app/src/app/invoice/[id]/page.tsx` (~line 111)
 - `apps/student-app/src/app/(main)/orders/[id]/page.tsx` (~line 236)
-- `apps/admin-app/src/app/(dashboard)/orders/[id]/page.tsx` (matching admin order detail)
 
-When `tax_paise === 0` the GST row is not rendered at all; Subtotal → (Discount) → Total remain.
+When `tax_paise === 0` the GST row is not rendered at all; Subtotal → (Discount) → Total remain. (The admin order-detail page renders no GST breakdown, so it needs no change.)
 
 ### 5. Admin API — `PUT /api/v1/admin/canteens/[id]`
 - Accept `gst_enabled` and `tax_percentage` in the request body.
