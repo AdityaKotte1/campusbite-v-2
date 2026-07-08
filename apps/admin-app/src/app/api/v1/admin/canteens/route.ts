@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
   let query = service
     .from('canteens')
-    .select('id, name, code, institute_id, is_active, location, building, floor, opens_at, closes_at, is_open, description')
+    .select('id, name, code, institute_id, is_active, billing_state, location, building, floor, opens_at, closes_at, is_open, description, cash_payments_enabled, gst_enabled, tax_percentage')
     .order('name');
 
   if (profile.role === 'staff') {
@@ -52,7 +52,9 @@ export async function GET(request: NextRequest) {
     if (!profile.institute_id) {
       return NextResponse.json({ success: true, data: [] });
     }
-    query = query.eq('institute_id', profile.institute_id).neq('billing_state', 'pending_payment');
+    // Include pending_payment canteens so the admin can resume/discard them
+    // (rendered as a "Payment pending" card). Staff (above) still never see them.
+    query = query.eq('institute_id', profile.institute_id);
   } else {
     // super_admin — unrestricted listing, optionally NARROWED by ?institute_id=xxx
     if (instituteId) {
@@ -164,6 +166,11 @@ export async function POST(request: NextRequest) {
       closes_at: closing_time,
       image_url: image_url || null,
       is_active: true,
+      // Super-admin provisioning is authoritative (no paid add-on gate), so the
+      // canteen is live immediately. Without this it inherits the column default
+      // (`pending_payment`), which hides it from the canteen_admin listing and
+      // desyncs it from the billing count.
+      billing_state: 'active',
       is_open: false,
       rating: 0,
       total_reviews: 0,

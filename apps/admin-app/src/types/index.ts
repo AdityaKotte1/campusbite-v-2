@@ -70,6 +70,15 @@ export interface Canteen {
   rating: number;
   total_reviews: number;
   is_active: boolean;
+  // Billing lifecycle: 'active' = live/billable, 'pending_payment' = add-on
+  // awaiting payment (hidden from students, resumable/discardable by the admin).
+  billing_state?: 'active' | 'pending_payment' | null;
+  // When false, students can't choose "Pay by cash" for this canteen (online only).
+  cash_payments_enabled?: boolean;
+  // GST billing — super_admin controlled. When gst_enabled is false, no GST is
+  // charged on student orders at this canteen. Read-only for canteen admins.
+  gst_enabled?: boolean;
+  tax_percentage?: number | string;
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +94,7 @@ export interface Category {
   image_url: string | null;
   sort_order: number;
   is_active: boolean;
+  separate_billing: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -163,6 +173,10 @@ export interface Order {
   collected_at: string | null;
   cancelled_at: string | null;
   cancellation_reason: string | null;
+  // Soft-hide: set when a canteen admin cleared this order from their history
+  // view. Rows are never deleted; only super admins see hidden orders.
+  hidden_at: string | null;
+  hidden_by: string | null;
   created_at: string;
   updated_at: string;
   // Joined
