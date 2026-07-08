@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   ShoppingCart,
   Trash2,
@@ -75,8 +75,34 @@ export default function CartPage() {
   const router = useRouter();
   const { items, canteenId, updateQuantity, removeItem, clearCart } = useCartStore();
   const subtotalPaise = useCartSubtotal();
-  const taxPaise = useCartTax();
-  const totalPaise = useCartTotal();
+
+  // Whether this canteen accepts cash. A null/undefined flag means "enabled"
+  // (existing canteens keep cash until an admin turns it off). If cash is off,
+  // hide the option and fall back to online so checkout can't submit 'cash'.
+  const { data: canteen } = useQuery({
+    queryKey: ['canteen', canteenId],
+    queryFn: () =>
+      fetch(`/api/v1/canteens/${canteenId}`)
+        .then((r) => r.json())
+        .then(
+          (j) =>
+            j.data as {
+              cash_payments_enabled?: boolean;
+              gst_enabled?: boolean;
+              tax_percentage?: number | string;
+            } | null
+        ),
+    enabled: !!canteenId,
+  });
+  const cashEnabled = canteen?.cash_payments_enabled !== false;
+
+  // GST is per-canteen. A null/absent flag means enabled (existing canteens keep GST).
+  const gstEnabled = canteen?.gst_enabled !== false;
+  const taxPercent = Number(canteen?.tax_percentage ?? 5);
+  const taxRate = gstEnabled ? taxPercent / 100 : 0;
+
+  const taxPaise = useCartTax(taxRate);
+  const totalPaise = useCartTotal(taxRate);
   const user = useAuthStore((s) => s.user);
   const showToast = useUIStore((s) => s.showToast);
 
@@ -89,6 +115,10 @@ export default function CartPage() {
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'cash'>('online');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!cashEnabled && paymentMethod === 'cash') setPaymentMethod('online');
+  }, [cashEnabled, paymentMethod]);
 
   const couponMutation = useMutation({
     mutationFn: () => validateCoupon(couponCode, canteenId!),
@@ -383,10 +413,12 @@ export default function CartPage() {
             <span className="text-text-2">Subtotal</span>
             <span className="text-text tabular-nums">{formatPrice(subtotalPaise)}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-text-2">GST (5%)</span>
-            <span className="text-text tabular-nums">{formatPrice(taxPaise)}</span>
-          </div>
+          {gstEnabled && (
+            <div className="flex justify-between text-sm">
+              <span className="text-text-2">GST ({taxPercent}%)</span>
+              <span className="text-text tabular-nums">{formatPrice(taxPaise)}</span>
+            </div>
+          )}
           {discountPaise > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-green-dark">Coupon Discount</span>
@@ -404,7 +436,7 @@ export default function CartPage() {
       {/* Payment Method */}
       <div className="bg-surface rounded-2xl border border-border p-4">
         <p className="eyebrow mb-3">Payment Method</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className={`grid gap-2 ${cashEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
           <button
             type="button"
             onClick={() => setPaymentMethod('online')}
@@ -417,22 +449,29 @@ export default function CartPage() {
           >
             Pay online
           </button>
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('cash')}
-            aria-pressed={paymentMethod === 'cash'}
-            className={`rounded-lg border px-3 py-3 text-sm font-semibold transition-colors cursor-pointer ${
-              paymentMethod === 'cash'
-                ? 'border-brand bg-brand text-white'
-                : 'border-border-2 bg-surface text-text hover:border-text-3'
-            }`}
-          >
-            Pay by cash
-          </button>
+          {cashEnabled && (
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('cash')}
+              aria-pressed={paymentMethod === 'cash'}
+              className={`rounded-lg border px-3 py-3 text-sm font-semibold transition-colors cursor-pointer ${
+                paymentMethod === 'cash'
+                  ? 'border-brand bg-brand text-white'
+                  : 'border-border-2 bg-surface text-text hover:border-text-3'
+              }`}
+            >
+              Pay by cash
+            </button>
+          )}
         </div>
-        {paymentMethod === 'cash' && (
+        {cashEnabled && paymentMethod === 'cash' && (
           <p className="text-xs text-text-3 mt-2.5">
             Place your order now and pay with cash at the counter. Your order will be confirmed once staff accept it.
+          </p>
+        )}
+        {!cashEnabled && (
+          <p className="text-xs text-text-3 mt-2.5">
+            This canteen accepts online payment only.
           </p>
         )}
       </div>
