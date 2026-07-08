@@ -55,7 +55,10 @@ export async function PATCH(request: Request) {
 
   const updates = parsed.data;
 
-  // If setting institute_id, verify the institute exists and is active
+  // If setting institute_id, verify the institute exists and is active.
+  // Students may change their institute from the profile picker (consistent with
+  // onboarding, which already lets them pick any institute); we only require the
+  // target institute to exist and be active.
   if (updates.institute_id) {
     const { data: institute, error: instErr } = await supabase
       .from('institutes')

@@ -16,7 +16,7 @@ export function Header({ title }: HeaderProps) {
   const role = (useAuthStore((s) => s.user) as { role?: string } | null)?.role ?? '';
 
   return (
-    <header className="h-16 bg-surface/80 backdrop-blur-xl border-b border-border flex items-center px-6 gap-4 shrink-0 sticky top-0 z-20">
+    <header className="h-16 bg-surface/80 backdrop-blur-xl border-b border-border flex items-center px-4 sm:px-6 gap-2 sm:gap-4 shrink-0 sticky top-0 z-20">
       {/* Mobile menu toggle */}
       <button
         onClick={toggleSidebar}
@@ -36,11 +36,11 @@ export function Header({ title }: HeaderProps) {
         </button>
       )}
 
-      <h1 className="font-display text-xl font-semibold text-text flex-1 tracking-tight">{title}</h1>
+      <h1 className="font-display text-lg sm:text-xl font-semibold text-text flex-1 min-w-0 truncate tracking-tight">{title}</h1>
 
       {role === 'super_admin' && <ScopeSelector />}
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         {/* Notifications */}
         <button className="relative p-2 rounded-lg text-text-2 hover:bg-bg transition">
           <Bell className="w-5 h-5" />

@@ -32,7 +32,7 @@ export async function GET(request: Request, { params }: Params) {
 
     let query = supabase
       .from('menu_items')
-      .select('*, category:categories(id, name)')
+      .select('*, category:categories(id, name, separate_billing)')
       .eq('canteen_id', canteenId)
       .eq('is_available', true)
       .order('sort_order', { ascending: true })

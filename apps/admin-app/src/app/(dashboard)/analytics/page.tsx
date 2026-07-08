@@ -65,7 +65,7 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
       {/* Date Range */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         {DAYS_OPTIONS.map((opt) => (
           <button
             key={opt.value}

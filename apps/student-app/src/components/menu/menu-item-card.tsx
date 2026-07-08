@@ -33,7 +33,10 @@ export function MenuItemCard({ item, disabled = false, className }: MenuItemCard
       showToast('This item is currently unavailable', 'error');
       return;
     }
-    addItem(item);
+    const result = addItem(item);
+    if (!result.ok) {
+      showToast(result.reason ?? 'This item can’t be added to your cart', 'error');
+    }
   }
 
   function handleDecrease() {

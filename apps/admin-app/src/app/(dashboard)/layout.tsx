@@ -38,6 +38,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     refreshUser();
   }, [refreshUser]);
 
+  // Close the mobile slide-in drawer whenever the route changes, so tapping a
+  // nav item doesn't leave the drawer covering the page it navigated to.
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname, setSidebarOpen]);
+
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
       {/* Mobile overlay */}
@@ -61,7 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header title={getTitle(pathname)} />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

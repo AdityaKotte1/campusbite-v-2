@@ -28,6 +28,7 @@ export async function GET(request: Request) {
       .from('canteens')
       .select('*, institute:institutes(id, name, code:short_name, city, state)')
       .eq('is_active', true)
+      .eq('billing_state', 'active') // never surface an unpaid/pending canteen to students
       .order('name', { ascending: true })
       .limit(Math.min(limit, 50));
 

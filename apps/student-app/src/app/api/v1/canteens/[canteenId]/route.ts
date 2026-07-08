@@ -23,6 +23,7 @@ export async function GET(_request: Request, { params }: Params) {
       .select('*, institute:institutes(id, name, code:short_name, city, state)')
       .eq('id', canteenId)
       .eq('is_active', true)
+      .eq('billing_state', 'active') // pending/unpaid canteens are not student-visible
       .single();
 
     if (error || !data) {

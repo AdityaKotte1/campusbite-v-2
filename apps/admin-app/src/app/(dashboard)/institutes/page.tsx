@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import {
   Plus, ChevronDown, ChevronRight, Pencil, Power, PowerOff, Store,
-  UserCheck, Loader2, Building2, Upload, ImageIcon, X,
+  UserCheck, UserMinus, Loader2, Building2, Upload, ImageIcon, X,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -60,6 +60,7 @@ export default function InstitutesPage() {
   const [showAddInstitute, setShowAddInstitute] = useState(false);
   const [addCanteenFor, setAddCanteenFor] = useState<string | null>(null);
   const [assignAdminFor, setAssignAdminFor] = useState<string | null>(null);
+  const [unassignAdminFor, setUnassignAdminFor] = useState<InstituteWithMeta | null>(null);
   const [editInstitute, setEditInstitute] = useState<InstituteWithMeta | null>(null);
 
   const { data, isLoading } = useQuery<{ success: boolean; data: InstituteWithMeta[] }>({
@@ -104,7 +105,7 @@ export default function InstitutesPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="eyebrow">Network</p>
           <p className="font-display text-sm font-semibold tracking-tight text-text-2">
@@ -118,7 +119,8 @@ export default function InstitutesPage() {
 
       {/* Table card */}
       <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr>
               {['', 'Institute', 'Code', 'Location', 'Canteens', 'Admin', 'Status', 'Actions'].map((h) => (
@@ -164,6 +166,7 @@ export default function InstitutesPage() {
                     onToggle={() => toggleExpand(inst.id)}
                     onAddCanteen={() => setAddCanteenFor(inst.id)}
                     onAssignAdmin={() => setAssignAdminFor(inst.id)}
+                    onUnassignAdmin={() => setUnassignAdminFor(inst)}
                     onEdit={() => setEditInstitute(inst)}
                     onDeactivate={() => handleDeactivate(inst.id)}
                     onActivate={() => handleActivate(inst.id)}
@@ -171,6 +174,7 @@ export default function InstitutesPage() {
                 ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Dialogs */}
@@ -201,6 +205,13 @@ export default function InstitutesPage() {
           onSuccess={() => { setAssignAdminFor(null); invalidate(); }}
         />
       )}
+      {unassignAdminFor && (
+        <UnassignAdminDialog
+          institute={unassignAdminFor}
+          onClose={() => setUnassignAdminFor(null)}
+          onSuccess={() => { setUnassignAdminFor(null); invalidate(); }}
+        />
+      )}
     </div>
   );
 }
@@ -213,6 +224,7 @@ function InstituteRows({
   onToggle,
   onAddCanteen,
   onAssignAdmin,
+  onUnassignAdmin,
   onEdit,
   onDeactivate,
   onActivate,
@@ -222,6 +234,7 @@ function InstituteRows({
   onToggle: () => void;
   onAddCanteen: () => void;
   onAssignAdmin: () => void;
+  onUnassignAdmin: () => void;
   onEdit: () => void;
   onDeactivate: () => void;
   onActivate: () => void;
@@ -301,6 +314,17 @@ function InstituteRows({
             <Button variant="ghost" size="icon-sm" title="Assign admin" onClick={onAssignAdmin}>
               <UserCheck className="w-3.5 h-3.5" />
             </Button>
+            {institute.admin && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="Remove admin (demote to student)"
+                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                onClick={onUnassignAdmin}
+              >
+                <UserMinus className="w-3.5 h-3.5" />
+              </Button>
+            )}
             <Button variant="ghost" size="icon-sm" title="Edit" onClick={onEdit}>
               <Pencil className="w-3.5 h-3.5" />
             </Button>
@@ -434,8 +458,8 @@ function AddInstituteDialog({
       <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-4">
         {serverError && <ErrorBanner message={serverError} />}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
             <FieldLabel required>Institute Name</FieldLabel>
             <Input {...register('name')} placeholder="e.g. IIT Bombay" error={!!errors.name} />
             <FieldError msg={errors.name?.message} />
@@ -459,18 +483,18 @@ function AddInstituteDialog({
             <Input {...register('state')} placeholder="Maharashtra" error={!!errors.state} />
             <FieldError msg={errors.state?.message} />
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <FieldLabel>Address</FieldLabel>
             <Input {...register('address')} placeholder="Powai, Mumbai" />
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <FieldLabel>Logo URL</FieldLabel>
             <Input {...register('logo_url')} placeholder="https://..." error={!!errors.logo_url} />
             <FieldError msg={errors.logo_url?.message} />
           </div>
         </div>
 
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
@@ -563,7 +587,7 @@ function AddCanteenDialog({
           <Input {...register('location')} placeholder="e.g. Block A, Ground Floor" error={!!errors.location} />
           <FieldError msg={errors.location?.message} />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <FieldLabel required>Opening Time</FieldLabel>
             <Input {...register('opening_time')} type="time" error={!!errors.opening_time} />
@@ -642,7 +666,7 @@ function AddCanteenDialog({
           {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
         </div>
 
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
@@ -709,7 +733,7 @@ function AssignAdminDialog({
           <FieldError msg={errors.email?.message} />
         </div>
 
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
@@ -725,6 +749,64 @@ function AssignAdminDialog({
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
+// ─── Dialog: Unassign / Demote Admin ─────────────────────────────────────────
+
+function UnassignAdminDialog({
+  institute,
+  onClose,
+  onSuccess,
+}: {
+  institute: InstituteWithMeta;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [serverError, setServerError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const adminEmail = institute.admin?.email ?? '';
+  const adminName = institute.admin?.full_name ?? adminEmail;
+
+  const onConfirm = async () => {
+    if (submitting) return;
+    setServerError('');
+    setSubmitting(true);
+    try {
+      await axios.post(`/api/v1/admin/institutes/${institute.id}/unassign-admin`, { email: adminEmail });
+      onSuccess();
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err)
+        ? err.response?.data?.error?.message ?? 'Request failed'
+        : 'Unknown error';
+      setServerError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <DialogShell title="Remove Canteen Admin" onClose={onClose}>
+      <div className="p-5 space-y-4">
+        {serverError && <ErrorBanner message={serverError} />}
+
+        <p className="text-sm text-text-2">
+          Demote <strong>{adminName}</strong> to a student? They will lose canteen-admin
+          access to <strong>{institute.name}</strong>. You can re-assign them anytime.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button type="button" variant="destructive" className="flex-1" onClick={onConfirm} disabled={submitting}>
+            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            Remove Admin
+          </Button>
+        </div>
+      </div>
+    </DialogShell>
+  );
+}
+
 function DialogShell({
   title,
   onClose,
@@ -736,7 +818,7 @@ function DialogShell({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
-      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-lg my-4">
+      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-lg my-4 max-h-[90vh] overflow-y-auto">
         <div className="px-5 py-4 border-b border-border flex items-start justify-between">
           <div>
             <p className="eyebrow">Network</p>

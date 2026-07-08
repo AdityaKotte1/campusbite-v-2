@@ -105,6 +105,15 @@ export async function POST(request: Request) {
 
       case 'payment.failed': {
         if (!paymentEntity) break;
+
+        // Resolve the order so we can return its reserved stock after marking it
+        // failed. The stock was decremented at order creation.
+        const { data: failedOrder } = await service
+          .from('orders')
+          .select('id')
+          .eq('razorpay_order_id', paymentEntity.order_id)
+          .single();
+
         await service
           .from('orders')
           .update({ payment_status: 'failed', status: 'payment_failed' })
@@ -115,6 +124,14 @@ export async function POST(request: Request) {
           .from('payment_transactions')
           .update({ status: 'failed', gateway_response: paymentEntity })
           .eq('razorpay_order_id', paymentEntity.order_id);
+
+        // Return the reserved stock. Idempotent + service-only; log but don't throw.
+        if (failedOrder) {
+          const { error: restockErr } = await service.rpc('restock_order', { p_order_id: failedOrder.id });
+          if (restockErr) {
+            console.error('[webhook payment.failed] restock error:', restockErr);
+          }
+        }
 
         break;
       }

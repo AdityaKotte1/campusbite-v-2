@@ -51,7 +51,12 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.check_rate_limit(TEXT, INTEGER, INTEGER) TO service_role, authenticated;
+-- `p_key` is caller-supplied, so granting to `authenticated` lets any logged-in
+-- user tamper with (or reset) any rate-limit bucket. The route calls this via the
+-- service client only — restrict to service_role and defensively revoke the rest.
+GRANT EXECUTE ON FUNCTION public.check_rate_limit(TEXT, INTEGER, INTEGER) TO service_role;
+
+REVOKE ALL ON FUNCTION public.check_rate_limit(TEXT, INTEGER, INTEGER) FROM authenticated, PUBLIC;
 
 -- Optional housekeeping: drop expired buckets. Safe to run from a cron.
 -- DELETE FROM public.rate_limits WHERE reset_at < now() - interval '1 day';

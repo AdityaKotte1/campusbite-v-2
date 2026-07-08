@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
   let query = service
     .from('kiosks')
-    .select('*, canteens(id, name, location)')
+    .select('*, canteen:canteens(id, name, location)')
     .order('created_at', { ascending: false });
 
   // Restrict to in-scope canteens (never widens). `[]` → zero rows.

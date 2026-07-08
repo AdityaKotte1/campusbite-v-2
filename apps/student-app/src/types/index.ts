@@ -45,6 +45,8 @@ export interface Canteen {
   rating: number;
   total_reviews: number;
   is_active: boolean;
+  // When false, "Pay by cash" is hidden at checkout for this canteen (online only).
+  cash_payments_enabled?: boolean;
   created_at: string;
   updated_at: string;
   institute?: Institute;
@@ -58,6 +60,7 @@ export interface Category {
   image_url: string | null;
   sort_order: number;
   is_active: boolean;
+  separate_billing: boolean;
   created_at: string;
   updated_at: string;
 }

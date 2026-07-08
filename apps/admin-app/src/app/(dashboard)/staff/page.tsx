@@ -103,9 +103,9 @@ export default function StaffPage() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-        <div className="flex items-center gap-3 flex-1">
+        <div className="flex flex-wrap items-center gap-3 flex-1">
           {/* Search */}
-          <div className="relative flex-1 max-w-xs">
+          <div className="relative w-full sm:w-auto sm:flex-1 sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3" />
             <Input
               className="pl-9"
@@ -120,7 +120,7 @@ export default function StaffPage() {
             value={filterCanteenId}
             onChange={(e) => setFilterCanteenId(e.target.value)}
             aria-label="Filter by canteen"
-            className="h-9 px-3 rounded-lg border border-border-2 bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all"
+            className="w-full sm:w-auto h-9 px-3 rounded-lg border border-border-2 bg-surface text-sm text-text hover:border-text-3 focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all"
           >
             <option value="">All Canteens</option>
             {canteens.map((c) => (
@@ -139,7 +139,8 @@ export default function StaffPage() {
 
       {/* Table */}
       <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[600px] text-sm">
           <thead>
             <tr>
               {['Staff Member', 'Role', 'Assigned Canteen', 'Joined', 'Status', 'Actions'].map((h) => (
@@ -247,6 +248,7 @@ export default function StaffPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Add Staff Dialog */}
@@ -301,7 +303,7 @@ function AddStaffDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-md">
+      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="px-5 py-4 border-b border-border flex items-start justify-between">
           <div>
             <p className="eyebrow">Team</p>
@@ -368,7 +370,7 @@ function AddStaffDialog({
             )}
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               Cancel
             </Button>

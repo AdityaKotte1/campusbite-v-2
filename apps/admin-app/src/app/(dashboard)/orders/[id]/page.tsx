@@ -50,20 +50,20 @@ export default function OrderDetailPage() {
   return (
     <div className="max-w-4xl space-y-5">
       {/* Back + Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Link href="/orders">
           <Button variant="outline" size="icon-sm">
             <ArrowLeft className="w-4 h-4" />
           </Button>
         </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h2 className="font-mono text-lg font-semibold text-text tracking-tight">{data.order_number}</h2>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h2 className="font-mono text-lg font-semibold text-text tracking-tight break-all">{data.order_number}</h2>
             <OrderStatusBadge status={data.status} />
           </div>
           <p className="text-xs text-text-3 mt-0.5">{formatDateTime(data.created_at)}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full sm:w-auto flex-wrap items-center gap-2">
           <StatusUpdateButton
             orderId={data.id}
             currentStatus={data.status as OrderStatus}
@@ -98,7 +98,8 @@ export default function OrderDetailPage() {
               <CardTitle className="font-display tracking-tight">Order Items</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[480px] text-sm">
                 <thead>
                   <tr>
                     <th className="px-5 py-3 text-left text-xs font-semibold text-text-3 uppercase bg-bg-2 border-b border-border">Item</th>
@@ -149,6 +150,7 @@ export default function OrderDetailPage() {
                   </tr>
                 </tfoot>
               </table>
+              </div>
             </CardContent>
           </Card>
 
@@ -173,8 +175,8 @@ export default function OrderDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              <p className="text-sm font-medium text-text">{data.user?.full_name ?? '—'}</p>
-              <p className="text-sm text-text-2">{data.user?.email ?? '—'}</p>
+              <p className="text-sm font-medium text-text break-words">{data.user?.full_name ?? '—'}</p>
+              <p className="text-sm text-text-2 break-all">{data.user?.email ?? '—'}</p>
               {data.user?.phone && <p className="text-sm text-text-2">{data.user.phone}</p>}
             </CardContent>
           </Card>

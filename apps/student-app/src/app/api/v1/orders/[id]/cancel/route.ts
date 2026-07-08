@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 interface Params {
   params: { id: string };
@@ -40,7 +40,10 @@ export async function POST(request: Request, { params }: Params) {
 
     const newStatus = order.payment_status === 'paid' ? 'refunded' : 'cancelled';
 
-    const { data: updated, error: updateErr } = await supabase
+    // No own-UPDATE RLS policy exists on `orders`, so a user-context write matches
+    // 0 rows and 500s. Write with the SERVICE client and RE-ASSERT ownership on the
+    // update (id + user_id) to preserve the security guarantee without RLS.
+    const { data: updated, error: updateErr } = await createServiceClient()
       .from('orders')
       .update({
         status: newStatus,
@@ -49,12 +52,19 @@ export async function POST(request: Request, { params }: Params) {
         payment_status: order.payment_status === 'paid' ? 'refunded' : order.payment_status,
       })
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
     if (updateErr) {
       console.error('[orders cancel] update error:', updateErr);
       return NextResponse.json({ error: 'update_failed' }, { status: 500 });
+    }
+
+    // Return the stock reserved at order creation. Idempotent + service-only.
+    const { error: restockErr } = await createServiceClient().rpc('restock_order', { p_order_id: id });
+    if (restockErr) {
+      console.error('[orders cancel] restock error:', restockErr);
     }
 
     return NextResponse.json({ data: updated });

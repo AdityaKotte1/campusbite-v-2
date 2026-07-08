@@ -53,3 +53,6 @@ venv/
 kiosk/config/kiosk.yaml
 kiosk/db/
 kiosk/logs/
+
+# Claude/superpowers local tooling scratch (not product code)
+.superpowers/

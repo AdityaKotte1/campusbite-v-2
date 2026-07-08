@@ -122,7 +122,7 @@ export default function BillingPage() {
     <div className="max-w-3xl space-y-6">
       <div>
         <p className="eyebrow">Billing &amp; Subscription</p>
-        <h2 className="font-display text-2xl font-semibold text-text tracking-tight">{me.institute?.name}</h2>
+        <h2 className="font-display text-xl sm:text-2xl font-semibold text-text tracking-tight">{me.institute?.name}</h2>
         <p className="text-sm text-text-3 mt-1">Manage your plan, renewals and invoices.</p>
       </div>
 
@@ -139,7 +139,7 @@ export default function BillingPage() {
 
       {/* Current status */}
       <div className="bg-surface rounded-xl border border-border shadow-sm p-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="eyebrow mb-2">Current status</p>
             <div className="flex items-center gap-2">
@@ -152,7 +152,7 @@ export default function BillingPage() {
               )}
             </div>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <p className="eyebrow mb-2">Usage</p>
             <p className="text-sm text-text tabular-nums">
               {me.canteens} canteen{me.canteens === 1 ? '' : 's'} · {me.students.toLocaleString('en-IN')} students
@@ -176,7 +176,7 @@ export default function BillingPage() {
         )}
 
         {/* Cycle picker — plan cards */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {me.quotes.map((q) => {
             const selected = cycle === q.cycle;
             return (
@@ -244,7 +244,8 @@ export default function BillingPage() {
         <div className="px-5 py-3 border-b border-border bg-bg-2">
           <p className="eyebrow">Invoices</p>
         </div>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[600px] text-sm">
           <tbody>
             {me.invoices.length === 0 ? (
               <tr>
@@ -274,6 +275,7 @@ export default function BillingPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

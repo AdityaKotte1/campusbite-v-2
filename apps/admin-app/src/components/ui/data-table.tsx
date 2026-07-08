@@ -39,6 +39,7 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize });
 
   const table = useReactTable({
     data,
@@ -49,20 +50,22 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
     onGlobalFilterChange,
     state: {
       sorting,
       columnFilters,
       globalFilter,
-      pagination: { pageIndex: 0, pageSize },
+      pagination,
     },
   });
 
   return (
     <div className="space-y-3">
-      {/* Table */}
+      {/* Table — horizontal scroll on narrow screens so columns aren't clipped */}
       <div className="rounded-xl border border-border overflow-hidden bg-surface">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -130,6 +133,7 @@ export function DataTable<TData, TValue>({
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Pagination */}

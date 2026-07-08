@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ArrowRight, Store, Sparkles, ChefHat } from 'lucide-react';
@@ -44,12 +45,15 @@ export default function HomePage() {
     queryFn: fetchFeaturedItems,
   });
 
-  const greeting = () => {
+  // Time-based greeting is computed AFTER mount only. Computing it during render
+  // uses the server's timezone (UTC) for SSR but the client's local timezone on
+  // hydration, so the two frequently disagree → React hydration text mismatch
+  // (#425/#418/#423). A neutral default renders identically on both sides.
+  const [greeting, setGreeting] = useState('Welcome');
+  useEffect(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
+    setGreeting(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
+  }, []);
 
   const firstName = user?.full_name?.split(' ')[0] ?? 'there';
 
@@ -57,7 +61,7 @@ export default function HomePage() {
     <div className="max-w-lg mx-auto px-4 pt-5 pb-6 space-y-7">
       {/* Greeting */}
       <header className="animate-fade-up">
-        <p className="eyebrow">{greeting()}</p>
+        <p className="eyebrow">{greeting}</p>
         <h1 className="font-display text-[2rem] leading-none font-semibold text-text mt-1.5">
           Hey {firstName}.
         </h1>

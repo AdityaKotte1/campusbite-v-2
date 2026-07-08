@@ -309,6 +309,21 @@ class KioskApp:
 
     def _handle_online_scan(self, token: str) -> None:
         """POST to server, handle response codes."""
+        # Idempotency guard: if this token was already redeemed offline
+        # (marked used locally, or still pending in the sync queue), the
+        # server may not know yet. Reject locally as already-collected
+        # instead of asking the server, which could green-light a re-scan.
+        if self.queue.is_token_used(token) or self.queue.is_token_queued(token):
+            log.info(
+                "Token already redeemed offline (used/queued) — rejecting online scan: %s",
+                _redact(token),
+            )
+            self.display.show_error("ALREADY_USED", "Order already collected.")
+            self.audio.play("error")
+            time.sleep(4)
+            self.display.show_idle()
+            return
+
         result = self.api.scan_token(token)
 
         if result is None:
@@ -353,8 +368,9 @@ class KioskApp:
 
         import json
         order_data = json.loads(cached["order_data"])
-        self.queue.mark_used_offline(token, cached["order_data"])
-        self.queue.add_to_sync_queue(token, cached["order_data"])
+        # Atomic: mark used + enqueue for sync in a single transaction so a
+        # crash can't leave the token used locally but never queued.
+        self.queue.redeem_offline(token, cached["order_data"])
         log.info("Offline scan accepted for token %s — queued for sync.", _redact(token))
         self._handle_success(order_data, offline=True)
 

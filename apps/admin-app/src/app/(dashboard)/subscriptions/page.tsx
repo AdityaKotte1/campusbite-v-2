@@ -60,11 +60,11 @@ export default function SubscriptionsPage() {
     <div className="space-y-6">
       <div>
         <p className="eyebrow">Revenue</p>
-        <h2 className="font-display text-2xl font-semibold text-text tracking-tight">Subscriptions</h2>
+        <h2 className="font-display text-xl sm:text-2xl font-semibold text-text tracking-tight">Subscriptions</h2>
         <p className="text-sm text-text-3 mt-1">Manage institute subscriptions and billing.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard label="Institutes" value={String(rows.length)} icon={<Building2 className="w-4 h-4" />} />
         <StatCard
           label="Active subscribers"
@@ -81,7 +81,8 @@ export default function SubscriptionsPage() {
       </div>
 
       <div className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[600px] text-sm">
           <thead>
             <tr>
               {['Institute', 'Canteens', 'Students', 'Plan', 'Cycle', 'Status', 'Renews', ''].map((h, i) => (
@@ -140,6 +141,7 @@ export default function SubscriptionsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {manage && (

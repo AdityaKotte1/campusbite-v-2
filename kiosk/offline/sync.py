@@ -72,39 +72,59 @@ class SyncManager:
             log.warning("sync_batch: API returned None (network failure?).")
             return 0
 
-        results_list = result.get("results", [])
+        # The response envelope may be flat ({"results": [...]}) or wrapped
+        # under "data" ({"data": {"results": [...]}}) — support both, matching
+        # api_client.fetch_active_tokens which reads result["data"][...].
+        results_list = result.get("results")
+        if results_list is None:
+            results_list = result.get("data", {}).get("results")
+        if not isinstance(results_list, list):
+            log.warning("sync_batch: response missing/invalid results list — keeping batch pending.")
+            results_list = []
 
-        # Build token→status map from response
+        # Build token→status map from response (only explicit per-token acks).
         status_map: dict[str, str] = {}
         for item in results_list:
             tok = item.get("token")
-            status = item.get("status", "synced")
-            if tok:
+            status = item.get("status")
+            if tok and status:
                 status_map[tok] = status
 
         synced_count = 0
         for row in batch:
             token = row["token"]
             scan_id = row["id"]
-            # Default to 'synced' if server didn't return status for this token
-            server_status = status_map.get(token, "synced")
+            # Only act on an EXPLICIT per-token acknowledgement. Any token the
+            # server did not explicitly answer stays 'pending' so it retries on
+            # the next sync — never silently dropped on partial/truncated/
+            # misparsed responses (which would lose the offline redemption).
+            server_status = status_map.get(token)
 
-            if server_status in ("synced", "conflict", "error"):
-                db_status = server_status
-            else:
-                db_status = "synced"
-
-            self.queue.mark_synced(scan_id, db_status)
-
-            if db_status == "synced":
+            if server_status == "synced":
+                self.queue.mark_synced(scan_id, "synced")
                 synced_count += 1
-            elif db_status == "conflict":
+            elif server_status == "conflict":
+                # Permanent: token was already scanned online before sync ran.
+                self.queue.mark_synced(scan_id, "conflict")
                 log.warning(
                     "Sync conflict for token %s (scan_id=%d) — likely already "
                     "scanned online before sync ran.",
                     token, scan_id,
                 )
+            elif server_status in ("invalid", "rejected"):
+                # Server explicitly rejected this scan as invalid — drop it so
+                # it does not retry forever.
+                self.queue.mark_synced(scan_id, server_status)
+                log.error(
+                    "Server rejected token %s as %s (scan_id=%d) — dropping.",
+                    token, server_status, scan_id,
+                )
             else:
-                log.error("Server error syncing token %s (scan_id=%d).", token, scan_id)
+                # Missing ack or transient 'error' → keep pending for retry.
+                log.warning(
+                    "No definitive ack for token %s (scan_id=%d, status=%r) — "
+                    "keeping pending for retry.",
+                    token, scan_id, server_status,
+                )
 
         return synced_count

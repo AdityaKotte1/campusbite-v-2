@@ -13,6 +13,7 @@ import {
   Leaf,
   Drumstick,
   UtensilsCrossed,
+  Info,
 } from 'lucide-react';
 import { CategoryTabs } from '@/components/menu/category-tabs';
 import { MenuItemCard } from '@/components/menu/menu-item-card';
@@ -82,6 +83,8 @@ export default function MenuPage({ params }: Props) {
     queryKey: ['menu-items', canteenId, selectedCategoryId, vegFilter, debouncedSearch],
     queryFn: () => fetchMenuItems(canteenId, selectedCategoryId, vegFilter, debouncedSearch),
   });
+
+  const selectedCategory = categories?.find((c) => c.id === selectedCategoryId);
 
   return (
     <div className="max-w-lg mx-auto pb-6">
@@ -232,6 +235,16 @@ export default function MenuPage({ params }: Props) {
 
       {/* Menu Items */}
       <div className="px-4 pt-4">
+        {selectedCategory?.separate_billing && (
+          <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-light bg-amber-pale px-3 py-2 text-xs text-amber-dark">
+            <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+            <span>
+              <span className="font-semibold">{selectedCategory.name}</span> is ordered
+              separately — these items can&apos;t share a cart with items from other
+              categories.
+            </span>
+          </div>
+        )}
         {menuLoading ? (
           <div className="grid grid-cols-2 gap-3">
             {[...Array(6)].map((_, i) => (

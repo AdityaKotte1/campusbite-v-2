@@ -1,3 +1,4 @@
+
 # Raspberry Pi Kiosk Setup (pin-to-point)
 
 Fresh Raspberry Pi → running MunchAdda kiosk. This assumes **zero Linux knowledge** —

@@ -50,13 +50,13 @@ export default function KioskDetailPage() {
   return (
     <div className="max-w-4xl space-y-5">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Link href="/kiosks">
           <Button variant="outline" size="icon-sm">
             <ArrowLeft className="w-4 h-4" />
           </Button>
         </Link>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h2 className="font-display text-xl font-semibold text-text tracking-tight">{kiosk.name}</h2>
           <p className="text-xs text-text-3">{kiosk.location ?? 'No location set'}</p>
         </div>
@@ -78,7 +78,7 @@ export default function KioskDetailPage() {
             <CardContent className="space-y-3 text-sm">
               <Row label="Device ID" value={kiosk.device_id} mono />
               <Row label="Firmware" value={kiosk.firmware_version ?? '—'} />
-              <Row label="Canteen" value={kiosk.canteen_id} />
+              <Row label="Canteen" value={kiosk.canteen?.name ?? kiosk.canteen_id} />
               <Row label="Active" value={kiosk.is_active ? 'Yes' : 'No'} />
               <Row label="Registered" value={formatDateTime(kiosk.created_at)} />
             </CardContent>
@@ -100,7 +100,7 @@ export default function KioskDetailPage() {
             <CardHeader><CardTitle className="font-display tracking-tight">Last 100 Scans</CardTitle></CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[520px] text-sm">
                   <thead>
                     <tr>
                       {['Token', 'Order', 'Result', 'Time'].map((h) => (

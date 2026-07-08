@@ -43,6 +43,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: { already: true } }); // idempotent
   }
 
+  // The signature only proves order_id|payment_id — NOT the amount captured.
+  // Fetch the real payment entity and refuse to activate unless what Razorpay
+  // actually captured equals invoice.total_paise in INR. Fail CLOSED: if we
+  // can't positively confirm the amount, do not activate.
+  const KEY_ID = process.env.RAZORPAY_KEY_ID;
+  const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+  if (!KEY_ID || !KEY_SECRET) {
+    console.error('[subscriptions/verify] Razorpay keys not configured — refusing to activate');
+    return NextResponse.json({ success: false, error: { code: 'SERVER_MISCONFIGURATION', message: 'Payment verification unavailable' } }, { status: 500 });
+  }
+  let capturedAmount: number | undefined;
+  let capturedCurrency: string | undefined;
+  try {
+    const payRes = await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}`, {
+      headers: { Authorization: 'Basic ' + Buffer.from(`${KEY_ID}:${KEY_SECRET}`).toString('base64') },
+    });
+    if (payRes.ok) {
+      const payment = await payRes.json();
+      capturedAmount = typeof payment.amount === 'number' ? payment.amount : undefined;
+      capturedCurrency = typeof payment.currency === 'string' ? payment.currency : undefined;
+    } else {
+      console.error(`[subscriptions/verify] failed to fetch payment ${razorpay_payment_id} (${payRes.status})`);
+    }
+  } catch (e) {
+    console.error('[subscriptions/verify] error fetching payment for amount verification', e);
+  }
+  if (capturedAmount !== invoice.total_paise || capturedCurrency !== 'INR') {
+    console.error('[subscriptions/verify] captured amount mismatch', { razorpay_payment_id, capturedAmount, capturedCurrency, expected: invoice.total_paise });
+    return NextResponse.json({ success: false, error: { code: 'AMOUNT_MISMATCH', message: 'Captured payment amount does not match the invoice' } }, { status: 402 });
+  }
+
   // Add-on canteen payment: activate that canteen and re-sync the recurring record.
   if (invoice.canteen_id) {
     try {

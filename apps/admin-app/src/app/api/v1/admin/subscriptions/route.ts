@@ -6,6 +6,7 @@ import {
   type BillingCycle,
   CYCLE_CONFIG,
 } from '@/lib/subscription-pricing';
+import { getInstituteCounts } from '@/lib/subscription-actions';
 
 // Only super_admin manages institute subscriptions.
 async function requireSuperAdmin() {
@@ -73,13 +74,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: { code: 'INVALID_INPUT', message: 'institute_id and action are required' } }, { status: 400 });
   }
 
-  // Live counts (authoritative — drives pricing & plan)
-  const [{ count: canteens }, { count: students }] = await Promise.all([
-    service.from('canteens').select('id', { count: 'exact', head: true }).eq('institute_id', institute_id),
-    service.from('users').select('id', { count: 'exact', head: true }).eq('institute_id', institute_id).eq('role', 'student'),
-  ]);
-  const canteensCount = canteens ?? 0;
-  const studentsCount = students ?? 0;
+  // Live counts (authoritative — drives pricing & plan). Uses the shared helper
+  // so this matches every other billing path (self-serve checkout, the overview
+  // RPC): only `billing_state='active'` canteens are billable. A pending_payment
+  // (unpaid) canteen must never be charged for.
+  const { canteens: canteensCount, students: studentsCount } = await getInstituteCounts(service, institute_id);
 
   const { data: existing } = await service.from('institute_subscriptions').select('*').eq('institute_id', institute_id).maybeSingle();
 

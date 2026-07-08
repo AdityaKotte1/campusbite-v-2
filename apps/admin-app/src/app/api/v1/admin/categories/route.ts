@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { canteen_id, name, description, icon, sort_order } = body;
+  const { canteen_id, name, description, icon, sort_order, separate_billing } = body;
 
   if (!canteen_id || !name) {
     return NextResponse.json(
@@ -151,6 +151,7 @@ export async function POST(request: NextRequest) {
       description: description ?? null,
       icon: icon ?? null,
       sort_order: sort_order ?? 0,
+      separate_billing: separate_billing === true,
       is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

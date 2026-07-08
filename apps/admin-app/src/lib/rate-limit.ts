@@ -22,8 +22,19 @@ export interface RateLimitResult {
   resetAt: number;
 }
 
-export function rateLimit(name: string, config: RateLimitConfig) {
+// `failClosed` controls behaviour when the limiter backend errors or the RPC is
+// missing/misconfigured. Security-sensitive limiters (auth, payment) fail CLOSED
+// (deny) so a broken RPC can't silently disable the cap; availability-oriented
+// ones fail OPEN (allow) so a DB hiccup doesn't block real traffic.
+export function rateLimit(name: string, config: RateLimitConfig, failClosed = false) {
   const windowSeconds = Math.max(1, Math.ceil(config.windowMs / 1000));
+
+  // Result to return when we cannot evaluate the limit.
+  const onBackendFailure = (): RateLimitResult => ({
+    allowed: !failClosed,
+    remaining: failClosed ? 0 : config.requests,
+    resetAt: Date.now() + config.windowMs,
+  });
 
   return async function check(key: string): Promise<RateLimitResult> {
     try {
@@ -35,8 +46,11 @@ export function rateLimit(name: string, config: RateLimitConfig) {
       });
 
       if (error || !data) {
-        // Fail open — don't block real traffic because the limiter backend is down.
-        return { allowed: true, remaining: config.requests, resetAt: Date.now() + config.windowMs };
+        if (failClosed) {
+          // Surface the underlying error so a missing/broken RPC is visible in logs.
+          console.error(`[rate-limit:${name}] backend error — failing closed`, error ?? 'no data returned');
+        }
+        return onBackendFailure();
       }
 
       return {
@@ -44,14 +58,18 @@ export function rateLimit(name: string, config: RateLimitConfig) {
         remaining: typeof data.remaining === 'number' ? data.remaining : 0,
         resetAt: data.reset_at ? new Date(data.reset_at).getTime() : Date.now() + config.windowMs,
       };
-    } catch {
-      return { allowed: true, remaining: config.requests, resetAt: Date.now() + config.windowMs };
+    } catch (err) {
+      if (failClosed) {
+        console.error(`[rate-limit:${name}] threw — failing closed`, err);
+      }
+      return onBackendFailure();
     }
   };
 }
 
 // Pre-configured limiters (keys are namespaced by the first arg).
-export const authLimiter = rateLimit('auth', { requests: 5, windowMs: 60_000 });        // 5/min
+// auth + payment fail CLOSED; order + kiosk_scan fail OPEN for availability.
+export const authLimiter = rateLimit('auth', { requests: 5, windowMs: 60_000 }, true);        // 5/min
 export const orderLimiter = rateLimit('order', { requests: 20, windowMs: 60_000 });     // 20/min
-export const paymentLimiter = rateLimit('payment', { requests: 10, windowMs: 60_000 }); // 10/min
+export const paymentLimiter = rateLimit('payment', { requests: 10, windowMs: 60_000 }, true); // 10/min
 export const kioskScanLimiter = rateLimit('kiosk_scan', { requests: 120, windowMs: 60_000 }); // 120/min per kiosk

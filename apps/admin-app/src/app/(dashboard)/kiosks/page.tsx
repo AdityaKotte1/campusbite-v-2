@@ -61,7 +61,8 @@ export default function KiosksPage() {
       )}
 
       <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[600px] text-sm">
           <thead>
             <tr>
               {['Name', 'Canteen', 'Status', 'Last Seen', 'Printer', 'Device ID', 'Actions'].map((h) => (
@@ -151,6 +152,7 @@ export default function KiosksPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showRegister && (

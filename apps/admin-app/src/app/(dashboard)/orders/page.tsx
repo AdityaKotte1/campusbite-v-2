@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Eye, Download, Search } from 'lucide-react';
+import { Eye, Download, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { DataTable } from '@/components/ui/data-table';
 import { OrderStatusBadge } from '@/components/orders/order-status-badge';
@@ -69,7 +69,22 @@ function buildColumns(onUpdateStatus: (id: string, status: string) => Promise<vo
     {
       accessorKey: 'status',
       header: 'Status',
-      cell: ({ row }) => <OrderStatusBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <OrderStatusBadge status={row.original.status} />
+          {/* Only super admins ever receive hidden rows (they're filtered out
+              server-side for everyone else), so this badge is safe to show
+              whenever hidden_at is set. */}
+          {row.original.hidden_at && (
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-bg-2 text-text-3 border border-border"
+              title="A canteen admin hid this order from their history view"
+            >
+              Hidden
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       accessorKey: 'created_at',
@@ -105,6 +120,11 @@ export default function OrdersPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [boardCanteen, setBoardCanteen] = useState<string | null>(null);
+  // Identifies the exact set of orders the admin last exported to CSV. Deletion
+  // is only unlocked while this matches what's currently on screen, so an admin
+  // can never delete history they haven't first downloaded a copy of.
+  const [exportedKey, setExportedKey] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const queryClient = useQueryClient();
   const { instituteId, canteenId } = useScopeStore();
   const user = useAuthStore((s) => s.user);
@@ -155,10 +175,36 @@ export default function OrdersPage() {
 
   const columns = buildColumns(handleUpdateStatus);
 
-  const handleExportCSV = () => {
+  const filtered = search
+    ? orders.filter(
+        (o) =>
+          o.order_number.toLowerCase().includes(search.toLowerCase()) ||
+          o.user?.email?.toLowerCase().includes(search.toLowerCase()) ||
+          o.user?.full_name?.toLowerCase().includes(search.toLowerCase())
+      )
+    : orders;
+
+  // Stable signature of the rows currently shown. Exporting stamps this; the
+  // delete button only unlocks while the signature still matches (i.e. the admin
+  // is deleting exactly what they exported, before any filter/data change).
+  const currentKey = filtered
+    .map((o) => o.id)
+    .sort()
+    .join(',');
+
+  // Only canteen admins may hide history from their view. Super admins are
+  // view-only (they always see every order, hidden ones badged); staff cannot.
+  const canDeleteHistory = role === 'canteen_admin';
+  const deleteUnlocked =
+    canDeleteHistory && filtered.length > 0 && exportedKey === currentKey;
+
+  // Build the CSV from exactly what's on screen, escaping every field so commas
+  // and quotes in names/instructions can't corrupt the columns.
+  const buildCsv = () => {
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
     const rows = [
       ['Order #', 'Customer', 'Canteen', 'Items', 'Amount (₹)', 'Status', 'Time'],
-      ...orders.map((o) => [
+      ...filtered.map((o) => [
         o.order_number,
         o.user?.full_name ?? o.user?.email ?? '',
         o.canteen?.name ?? '',
@@ -168,23 +214,52 @@ export default function OrdersPage() {
         o.created_at,
       ]),
     ];
-    const csv = rows.map((r) => r.join(',')).join('\n');
+    return rows.map((r) => r.map((c) => esc(String(c))).join(',')).join('\n');
+  };
+
+  const handleExportCSV = () => {
+    if (filtered.length === 0) return;
+    const csv = buildCsv();
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
+    URL.revokeObjectURL(url);
+    // Unlock deletion of this exact set now that a copy has been saved.
+    setExportedKey(currentKey);
   };
 
-  const filtered = search
-    ? orders.filter(
-        (o) =>
-          o.order_number.toLowerCase().includes(search.toLowerCase()) ||
-          o.user?.email?.toLowerCase().includes(search.toLowerCase()) ||
-          o.user?.full_name?.toLowerCase().includes(search.toLowerCase())
+  const handleDeleteHistory = async () => {
+    if (!deleteUnlocked) return;
+    const ids = filtered.map((o) => o.id);
+    if (
+      !confirm(
+        `Hide ${ids.length} order${ids.length === 1 ? '' : 's'} from your history?\n\n` +
+          'The order data is preserved and stays visible to the super admin — this only ' +
+          'removes it from your list. Make sure you have saved the CSV you just downloaded.'
       )
-    : orders;
+    )
+      return;
+    setDeleting(true);
+    try {
+      await axios.delete('/api/v1/admin/orders', { data: { ids } });
+      setExportedKey(null);
+      // The dashboard's "Recent Orders" reads the same orders table under a
+      // different query key, so refresh it too (and any other order-derived views).
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    } catch (err) {
+      // Surface the server's actual reason instead of a generic message.
+      const serverMessage = axios.isAxiosError(err)
+        ? (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
+        : undefined;
+      alert(serverMessage ?? 'Failed to hide order history. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -203,7 +278,7 @@ export default function OrdersPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-9 px-3 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand"
+          className="h-9 w-full sm:w-auto px-3 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand"
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>
@@ -212,26 +287,50 @@ export default function OrdersPage() {
           ))}
         </select>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full sm:w-auto items-center gap-2">
           <Input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="w-36"
+            className="flex-1 min-w-0 sm:w-36 sm:flex-none"
           />
           <span className="text-text-3 text-sm">to</span>
           <Input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="w-36"
+            className="flex-1 min-w-0 sm:w-36 sm:flex-none"
           />
         </div>
 
-        <Button variant="outline" size="md" onClick={handleExportCSV}>
+        <Button
+          variant="outline"
+          size="md"
+          onClick={handleExportCSV}
+          disabled={filtered.length === 0}
+          className="w-full sm:w-auto"
+        >
           <Download className="w-4 h-4" />
           Export CSV
         </Button>
+
+        {canDeleteHistory && (
+          <Button
+            variant="destructive"
+            size="md"
+            onClick={handleDeleteHistory}
+            disabled={!deleteUnlocked || deleting}
+            className="w-full sm:w-auto"
+            title={
+              deleteUnlocked
+                ? `Hide ${filtered.length} order(s) from your history (data is kept)`
+                : 'Export the CSV first to enable hiding'
+            }
+          >
+            <Trash2 className="w-4 h-4" />
+            {deleting ? 'Hiding…' : `Hide History${deleteUnlocked ? ` (${filtered.length})` : ''}`}
+          </Button>
+        )}
       </div>
 
       {/* Prep + Forecast boards */}
@@ -239,7 +338,7 @@ export default function OrdersPage() {
         <select
           value={boardCanteen ?? ''}
           onChange={(e) => setBoardCanteen(e.target.value || null)}
-          className="h-9 px-3 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand"
+          className="h-9 w-full sm:w-auto px-3 rounded-lg border border-border bg-surface text-sm text-text focus:outline-none focus:ring-2 focus:ring-brand"
         >
           <option value="">Select a canteen…</option>
           {canteens.map((c) => (

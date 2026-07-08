@@ -73,7 +73,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           label="Today's Revenue"
           value={stats ? formatCurrencyCompact(stats.today_revenue_paise) : '—'}
@@ -151,7 +151,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr>
                     {['Order #', 'Customer', 'Amount', 'Status', 'Time'].map((h) => (
@@ -236,7 +236,7 @@ function InstituteOverview() {
           <p className="px-5 py-6 text-sm text-text-3">No institutes found.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[600px] text-sm">
               <thead>
                 <tr>
                   {['Institute', 'City', 'Canteens', "Today's Orders", 'Admin', 'Status'].map((h) => (

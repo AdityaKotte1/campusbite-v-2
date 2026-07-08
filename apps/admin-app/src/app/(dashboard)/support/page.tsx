@@ -49,7 +49,7 @@ function TicketCard({ t, onSaved }: { t: Ticket; onSaved: () => void }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-medium text-text">{t.subject}</p>
-          <p className="text-xs text-text-3 mt-0.5 capitalize">
+          <p className="text-xs text-text-3 mt-0.5 capitalize break-words">
             {t.category}{t.order_number ? ` · ${t.order_number}` : ''} · {t.name ?? 'User'} ({t.email ?? '—'}) ·{' '}
             <span className="tabular-nums">{new Date(t.created_at).toLocaleString('en-IN')}</span>
           </p>
@@ -98,16 +98,16 @@ export default function AdminSupportPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="eyebrow">Help desk</p>
-          <h2 className="font-display text-2xl font-semibold text-text tracking-tight">Support</h2>
+          <h2 className="font-display text-xl sm:text-2xl font-semibold text-text tracking-tight">Support</h2>
           <p className="text-sm text-text-3 mt-1">Respond to user tickets.</p>
         </div>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="h-9 px-2 rounded-lg border border-border-2 bg-surface text-sm text-text capitalize focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all"
+          className="h-9 px-2 w-full sm:w-auto rounded-lg border border-border-2 bg-surface text-sm text-text capitalize focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand transition-all"
         >
           <option value="">All</option>
           {STATUSES.map((s) => (

@@ -93,14 +93,14 @@ function RazorpayKeyForm({
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center gap-3 min-w-0">
           {currentKeyMask ? (
             <CheckCircle2 className="w-4 h-4 text-green flex-shrink-0" />
           ) : (
             <AlertCircle className="w-4 h-4 text-amber flex-shrink-0" />
           )}
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-medium text-text">{name}</p>
             {currentKeyMask ? (
               <p className="text-xs text-text-3 font-mono">{currentKeyMask}</p>

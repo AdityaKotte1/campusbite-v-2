@@ -21,9 +21,11 @@ export function ScopeSelector() {
         .then((r) => r.data),
   });
 
-  const sel = 'h-9 px-2 rounded-lg border border-border bg-surface text-sm text-text';
+  // min-w-0 + a small max-width on mobile lets the two dropdowns fit the header
+  // on a phone (text truncates) while expanding to full labels from `sm` up.
+  const sel = 'h-9 px-2 rounded-lg border border-border bg-surface text-sm text-text min-w-0 max-w-[6.5rem] sm:max-w-none truncate';
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
       <select className={sel} value={instituteId ?? ''} onChange={(e) => setInstitute(e.target.value || null)}>
         <option value="">All institutes</option>
         {(institutes?.data ?? []).map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}

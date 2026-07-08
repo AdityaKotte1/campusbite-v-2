@@ -49,4 +49,15 @@ export const CURRENCY = 'INR';
 export const DEFAULT_PREP_TIME_MIN = 10;
 export const DEFAULT_PREP_TIME_MAX = 30;
 
-export const POLLING_INTERVAL_MS = 15000; // 15 seconds for active order polling
+export const POLLING_INTERVAL_MS = 30000; // 30s active-order poll — halves request/egress volume vs 15s; combined with ETag/304 on the orders API, unchanged polls transfer ~nothing
+
+// With Supabase Realtime driving instant order-status updates, polling is demoted
+// to a slow safety net (catches anything missed while a socket was dropped). Each
+// safety poll returns 304 via the ETag handler unless something actually changed.
+export const SAFETY_POLL_INTERVAL_MS = 60000; // 60s backstop alongside Realtime
+
+// Fallback poll cadence used when the Realtime channel is NOT connected (the
+// publication migration isn't applied, or the socket dropped). Without this we'd
+// silently regress to the slow 60s backstop and lose the responsiveness Realtime
+// was meant to provide, so we poll faster (30s) until Realtime reconnects.
+export const REALTIME_FALLBACK_POLL_INTERVAL_MS = 30000; // 30s when Realtime is down

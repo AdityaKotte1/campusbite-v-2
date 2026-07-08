@@ -111,7 +111,7 @@ export default function AuditLogsPage() {
     <div className="space-y-5">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-52">
+        <div className="relative w-full sm:w-auto sm:flex-1 sm:min-w-52">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-3" />
           <Input
             value={search}
@@ -124,11 +124,11 @@ export default function AuditLogsPage() {
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
           placeholder="Filter by action…"
-          className="w-48"
+          className="w-full sm:w-48"
         />
-        <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" />
+        <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="flex-1 sm:flex-none sm:w-36" />
         <span className="text-text-3 text-sm">to</span>
-        <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
+        <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="flex-1 sm:flex-none sm:w-36" />
       </div>
 
       <DataTable

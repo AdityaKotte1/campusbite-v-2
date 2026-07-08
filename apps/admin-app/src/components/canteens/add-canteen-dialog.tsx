@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatPaise } from '@/lib/subscription-pricing';
+import { payAndVerify } from '@/lib/razorpay-checkout';
 
 const schema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -23,22 +24,11 @@ type FormValues = z.infer<typeof schema>;
 interface AddonQuote { remainingDays: number; subtotalPaise: number; gstPaise: number; totalPaise: number }
 interface AddonInfo { allowed: boolean; reason?: string; quote?: AddonQuote; period_end?: string }
 
-function loadRazorpay(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined') return resolve(false);
-    if ((window as unknown as { Razorpay?: unknown }).Razorpay) return resolve(true);
-    const s = document.createElement('script');
-    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
-    document.body.appendChild(s);
-  });
-}
-
 const REASON_TEXT: Record<string, string> = {
   not_active: 'You need an active subscription to add a canteen.',
   razorpay_disabled: 'Online payment isn’t enabled yet. Contact MunchAdda.',
   no_institute: 'Your account isn’t linked to an institute.',
+  pending_exists: 'You already have a canteen awaiting payment. Complete or discard it from the list first.',
 };
 
 export function AddCanteenDialog({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
@@ -76,9 +66,6 @@ export function AddCanteenDialog({ onClose, onSuccess }: { onClose: () => void; 
     setServerError('');
     setPaying(true);
     try {
-      const ok = await loadRazorpay();
-      if (!ok) throw new Error('Could not load the payment gateway');
-
       const { data: co } = await axios.post('/api/v1/admin/canteens/add-on/checkout', {
         ...values, image_url: imageUrl || null,
       });
@@ -86,24 +73,7 @@ export function AddCanteenDialog({ onClose, onSuccess }: { onClose: () => void; 
 
       if (order.free) { onSuccess(); return; } // ₹0 prorate → already active
 
-      await new Promise<void>((resolve, reject) => {
-        const RZP = (window as unknown as { Razorpay: new (o: unknown) => { open: () => void } }).Razorpay;
-        const rzp = new RZP({
-          key: order.key_id,
-          amount: order.amount,
-          currency: order.currency,
-          name: 'MunchAdda',
-          description: `Add canteen: ${values.name}`,
-          order_id: order.order_id,
-          theme: { color: '#E8390E' },
-          handler: async (resp: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
-            try { await axios.post('/api/v1/admin/subscriptions/verify', resp); resolve(); }
-            catch (e) { reject(e); }
-          },
-          modal: { ondismiss: () => reject(new Error('Payment cancelled')) },
-        });
-        rzp.open();
-      });
+      await payAndVerify(order, `Add canteen: ${values.name}`);
       onSuccess();
     } catch (e) {
       const text = axios.isAxiosError(e) ? e.response?.data?.error?.message ?? 'Payment failed' : (e as Error).message;

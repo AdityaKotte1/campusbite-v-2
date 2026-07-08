@@ -42,6 +42,12 @@ export const metadata: Metadata = {
     icon: '/icon-192.png',
     apple: '/icon-192.png',
   },
+  // Next's appleWebApp emits the (now-deprecated) apple-mobile-web-app-capable.
+  // Emit the standard mobile-web-app-capable alongside it so Chrome/Android stop
+  // warning and installability stays correct on both platforms.
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {

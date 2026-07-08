@@ -23,6 +23,18 @@ export async function GET() {
     return NextResponse.json({ success: true, data: { allowed: false, reason: 'razorpay_disabled' } });
   }
 
+  // One pending canteen at a time: if one already awaits payment, block adding a
+  // new one. The admin completes or discards the pending one from the list first.
+  const { data: pending } = await service
+    .from('canteens')
+    .select('id, name')
+    .eq('institute_id', profile.institute_id)
+    .eq('billing_state', 'pending_payment')
+    .limit(1);
+  if (pending && pending.length > 0) {
+    return NextResponse.json({ success: true, data: { allowed: false, reason: 'pending_exists', pending: { id: pending[0].id, name: pending[0].name } } });
+  }
+
   const { data: sub } = await service
     .from('institute_subscriptions')
     .select('status, billing_cycle, current_period_start, current_period_end')

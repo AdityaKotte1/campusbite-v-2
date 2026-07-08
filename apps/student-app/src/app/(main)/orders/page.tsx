@@ -1,11 +1,13 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Receipt, RefreshCw } from 'lucide-react';
 import { OrderCard } from '@/components/order/order-card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ACTIVE_ORDER_STATUSES, POLLING_INTERVAL_MS } from '@/lib/constants';
+import { createClient } from '@/lib/supabase/client';
+import { ACTIVE_ORDER_STATUSES, SAFETY_POLL_INTERVAL_MS, REALTIME_FALLBACK_POLL_INTERVAL_MS } from '@/lib/constants';
 import type { Order } from '@/types';
 
 async function fetchOrders(): Promise<Order[]> {
@@ -16,12 +18,51 @@ async function fetchOrders(): Promise<Order[]> {
 }
 
 export default function OrdersPage() {
+  const queryClient = useQueryClient();
+  // Track whether Realtime actually reached SUBSCRIBED. If it never connects (the
+  // publication migration isn't applied, socket dropped), we poll faster so we
+  // don't silently regress to the slow 60s backstop.
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
   const { data: orders, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['orders'],
     queryFn: fetchOrders,
-    refetchInterval: POLLING_INTERVAL_MS,
+    // Realtime (below) drives instant updates; when it's connected this is a slow
+    // 60s backstop that returns 304 unless something changed. When Realtime is NOT
+    // connected, fall back to a faster 30s poll.
+    refetchInterval: realtimeConnected ? SAFETY_POLL_INTERVAL_MS : REALTIME_FALLBACK_POLL_INTERVAL_MS,
     refetchIntervalInBackground: false,
   });
+
+  // Instant updates for any of this student's orders (new order placed, status
+  // advanced). RLS (orders_own_read) scopes the socket to user_id = auth.uid(),
+  // and we filter to be explicit. Any event invalidates the list.
+  useEffect(() => {
+    const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      channel = supabase
+        .channel('my-orders')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+          }
+        )
+        .subscribe((status) => {
+          if (cancelled) return;
+          setRealtimeConnected(status === 'SUBSCRIBED');
+        });
+    })();
+    return () => {
+      cancelled = true;
+      setRealtimeConnected(false);
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const activeOrders = orders?.filter((o) =>
     ACTIVE_ORDER_STATUSES.includes(o.status)

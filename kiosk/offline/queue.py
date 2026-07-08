@@ -70,14 +70,24 @@ class OfflineQueue:
     # ------------------------------------------------------------------
 
     def upsert_token(self, token: str, order_data: dict, expires_at: str) -> None:
-        """Insert or replace a cached token."""
+        """Insert or refresh a cached token, PRESERVING is_used.
+
+        The sync loop calls this every ~30s for every server-active token.
+        An INSERT OR REPLACE would reset is_used=0, so a token redeemed
+        offline (is_used=1) but not yet synced would become re-redeemable.
+        This upsert only refreshes order_data/expires_at and never downgrades
+        is_used. (Requires token to be a PRIMARY KEY / UNIQUE column.)
+        """
         order_json = json.dumps(order_data, ensure_ascii=False)
         with self._lock:
             self._conn.execute(
                 """
-                INSERT OR REPLACE INTO token_cache
+                INSERT INTO token_cache
                   (token, order_data, expires_at, is_used)
                 VALUES (?, ?, ?, 0)
+                ON CONFLICT(token) DO UPDATE SET
+                  order_data = excluded.order_data,
+                  expires_at = excluded.expires_at
                 """,
                 (token, order_json, expires_at),
             )
@@ -116,6 +126,44 @@ class OfflineQueue:
             )
             self._conn.commit()
         log.debug("Marked used offline: %s", token)
+
+    def is_token_used(self, token: str) -> bool:
+        """Return True if the token is marked is_used=1 in the local cache."""
+        row = self._conn.execute(
+            "SELECT is_used FROM token_cache WHERE token = ?", (token,)
+        ).fetchone()
+        return bool(row and row["is_used"])
+
+    def is_token_queued(self, token: str) -> bool:
+        """Return True if the token has a pending row in the sync queue."""
+        row = self._conn.execute(
+            "SELECT 1 FROM sync_queue "
+            "WHERE token = ? AND sync_status = 'pending' LIMIT 1",
+            (token,),
+        ).fetchone()
+        return row is not None
+
+    def redeem_offline(self, token: str, order_data_json: str) -> None:
+        """Atomically redeem a token offline.
+
+        Marks the cached token is_used=1 AND enqueues it for server sync in a
+        SINGLE transaction, so a crash can never leave the token used locally
+        but unqueued (which would mean the server is never told).
+        """
+        with self._lock:
+            self._conn.execute(
+                "UPDATE token_cache SET is_used = 1 WHERE token = ?",
+                (token,),
+            )
+            self._conn.execute(
+                """
+                INSERT INTO sync_queue (token, scanned_at, order_data, sync_status)
+                VALUES (?, ?, ?, 'pending')
+                """,
+                (token, _now_iso(), order_data_json),
+            )
+            self._conn.commit()
+        log.info("Redeemed offline (marked used + queued): %s", token)
 
     # ------------------------------------------------------------------
     # sync_queue operations

@@ -55,6 +55,7 @@ const categorySchema = z.object({
   icon: z.string().optional(),
   description: z.string().optional(),
   sort_order: z.coerce.number().default(0),
+  separate_billing: z.boolean().default(false),
 });
 
 type CategoryForm = z.infer<typeof categorySchema>;
@@ -288,7 +289,7 @@ export default function MenuPage() {
   return (
     <div className="space-y-5">
       {/* Tabs + action button */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1 bg-bg-2 border border-border rounded-lg p-1">
           {(['items', 'categories'] as const).map((t) => (
             <button
@@ -340,7 +341,7 @@ export default function MenuPage() {
       {/* ── Items Tab ── */}
       {tab === 'items' && (
         <div className="bg-surface rounded-xl border border-border overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr>
                 {itemTableHeaders.map((h) => (
@@ -522,7 +523,7 @@ export default function MenuPage() {
       {/* ── Categories Tab ── */}
       {tab === 'categories' && (
         <div className="bg-surface rounded-xl border border-border overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr>
                 {['Icon', 'Name', 'Canteen', 'Items', 'Sort Order', 'Active', 'Actions'].map(
@@ -586,10 +587,17 @@ export default function MenuPage() {
 
                     {/* Active */}
                     <td className="px-4 py-3">
-                      <Badge variant={cat.is_active ? 'success' : 'default'} className="gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${cat.is_active ? 'bg-green' : 'bg-text-3'}`} />
-                        {cat.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge variant={cat.is_active ? 'success' : 'default'} className="gap-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${cat.is_active ? 'bg-green' : 'bg-text-3'}`} />
+                          {cat.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                        {cat.separate_billing && (
+                          <Badge variant="warning" title="Items in this category must be ordered on their own">
+                            Separate billing
+                          </Badge>
+                        )}
+                      </div>
                     </td>
 
                     {/* Actions */}
@@ -762,7 +770,7 @@ function MenuItemDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
-      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-lg my-4">
+      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-lg my-4 max-h-[90vh] overflow-y-auto">
         <div className="px-5 py-4 border-b border-border flex items-start justify-between">
           <div>
             <p className="eyebrow">Menu</p>
@@ -834,7 +842,7 @@ function MenuItemDialog({
           </div>
 
           {/* Price + Prep Time */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-text mb-1.5">Price (₹) *</label>
               <Input
@@ -1013,8 +1021,9 @@ function CategoryDialog({
           icon: category.icon ?? '',
           description: category.description ?? '',
           sort_order: category.sort_order,
+          separate_billing: category.separate_billing ?? false,
         }
-      : { sort_order: 0 },
+      : { sort_order: 0, separate_billing: false },
   });
 
   const onSubmit = async (values: CategoryForm) => {
@@ -1034,7 +1043,7 @@ function CategoryDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
-      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-md my-4">
+      <div className="bg-surface rounded-2xl border border-border shadow-lg w-full max-w-md my-4 max-h-[90vh] overflow-y-auto">
         <div className="px-5 py-4 border-b border-border flex items-start justify-between">
           <div>
             <p className="eyebrow">Menu</p>
@@ -1109,6 +1118,26 @@ function CategoryDialog({
               className="max-w-[100px]"
             />
             <p className="text-xs text-text-3 mt-1">Lower numbers appear first</p>
+          </div>
+
+          {/* Separate billing */}
+          <div className="rounded-lg border border-border-2 bg-bg-2/40 p-3">
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                {...register('separate_billing')}
+                className="mt-0.5 h-4 w-4 rounded border-border-2 text-brand focus:ring-brand/30"
+              />
+              <span>
+                <span className="block text-sm font-medium text-text">
+                  Bill separately (must be ordered on its own)
+                </span>
+                <span className="block text-xs text-text-3 mt-0.5">
+                  Items in this category can&apos;t be combined with items from other
+                  categories in the same order.
+                </span>
+              </span>
+            </label>
           </div>
 
           <div className="flex gap-3 pt-1">

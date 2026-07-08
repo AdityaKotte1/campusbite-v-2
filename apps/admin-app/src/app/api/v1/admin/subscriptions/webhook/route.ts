@@ -57,6 +57,19 @@ export async function POST(request: Request) {
 
         // Only act on a still-pending invoice (idempotent vs the /verify path).
         if (invoice && invoice.status === 'pending') {
+          // Never activate unless what was actually captured matches the invoice.
+          const amount = paymentEntity?.amount as number | undefined;
+          const currency = paymentEntity?.currency as string | undefined;
+          if (amount !== invoice.total_paise || currency !== 'INR') {
+            console.error('[subscriptions/webhook] captured amount mismatch — skipping activation', {
+              orderId,
+              paymentId,
+              amount,
+              currency,
+              expected: invoice.total_paise,
+            });
+            return NextResponse.json({ received: true, skipped: 'amount_mismatch' });
+          }
           if (invoice.canteen_id) {
             // Add-on canteen payment — activate the canteen, don't touch the plan.
             await activateAddonCanteen(service, invoice.institute_id, invoice.canteen_id, invoice.id, paymentId);

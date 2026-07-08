@@ -45,7 +45,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   const [kioskResult, scansResult] = await Promise.all([
     service
       .from('kiosks')
-      .select('id, name, canteen_id, location, device_id, is_active, last_heartbeat, heartbeat_data, firmware_version, created_at, updated_at, canteens(id, name)')
+      .select('id, name, canteen_id, location, device_id, is_active, last_heartbeat, heartbeat_data, firmware_version, created_at, updated_at, canteen:canteens(id, name)')
       .eq('id', params.id)
       .single(),
     service

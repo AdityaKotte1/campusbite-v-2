@@ -104,5 +104,20 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_coupon(TEXT, UUID, INTEGER, UUID) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.release_coupon(UUID) TO authenticated, service_role;
+-- Both functions are ONLY ever invoked by the service client (order route).
+-- Granting to `authenticated` would let any logged-in user call `release_coupon`
+-- via PostgREST to reset `used_count` → unlimited redemptions. Restrict to
+-- service_role and defensively revoke everything else.
+GRANT EXECUTE ON FUNCTION public.claim_coupon(TEXT, UUID, INTEGER, UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.release_coupon(UUID) TO service_role;
+
+REVOKE ALL ON FUNCTION public.claim_coupon(TEXT, UUID, INTEGER, UUID) FROM authenticated, PUBLIC;
+REVOKE ALL ON FUNCTION public.release_coupon(UUID) FROM authenticated, PUBLIC;
+
+-- claim_coupon now owns the global-slot increment atomically under the coupon
+-- row lock (see `UPDATE public.coupons SET used_count = used_count + 1` above).
+-- The pre-existing trigger trg_increment_coupon_used_count on user_coupons INSERT
+-- (packages/database/functions.sql) would increment used_count a SECOND time when
+-- the order route inserts the user_coupons row, consuming 2 slots per redemption.
+-- Drop it so claim_coupon is the single source of truth.
+DROP TRIGGER IF EXISTS trg_increment_coupon_used_count ON public.user_coupons;

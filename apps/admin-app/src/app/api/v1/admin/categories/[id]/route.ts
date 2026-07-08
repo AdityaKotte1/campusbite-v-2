@@ -61,6 +61,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   if (body.icon !== undefined) updates.icon = body.icon || null;
   if (body.sort_order !== undefined) updates.sort_order = body.sort_order;
   if (body.is_active !== undefined) updates.is_active = body.is_active;
+  if (body.separate_billing !== undefined) updates.separate_billing = body.separate_billing === true;
 
   const { data, error } = await service
     .from('categories')

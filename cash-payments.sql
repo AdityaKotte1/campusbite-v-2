@@ -48,10 +48,21 @@ BEGIN
          approved_by=p_staff_id, approved_at=now(), updated_at=now()
    WHERE id=p_order_id;
 
-  -- Audit inside the same call (reliable on serverless; one fewer round trip
-  -- than a separate insert from the API route).
-  INSERT INTO public.audit_logs(user_id, action, entity_type, entity_id, metadata)
-  VALUES (p_staff_id, 'order.cash_approve', 'order', p_order_id, '{}'::jsonb);
+  -- Audit inside the same call (one fewer round trip than a separate insert),
+  -- but BEST-EFFORT: a failure here must NEVER roll back a financial approval.
+  -- The audit insert can fail against a drifted audit_logs schema (e.g. a stale
+  -- `action` CHECK constraint that predates free-form action strings, or
+  -- resource_type/resource_id vs entity_type/entity_id column drift). When this
+  -- write lived in the API route it was fire-and-forget and such failures were
+  -- swallowed; folding it in-transaction turned that latent failure into a 500
+  -- that rolled back confirm+paid. Trap it and surface the real cause to the
+  -- Postgres log (Supabase → Logs) so audit logging can be repaired separately.
+  BEGIN
+    INSERT INTO public.audit_logs(user_id, action, entity_type, entity_id, metadata)
+    VALUES (p_staff_id, 'order.cash_approve', 'order', p_order_id, '{}'::jsonb);
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'approve_cash_order: audit insert failed (non-fatal): %', SQLERRM;
+  END;
 
   RETURN jsonb_build_object('ok', true, 'order_id', p_order_id);
 END $$;

@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { resolveCanteenScope, type CallerProfile } from '@/lib/auth';
+import {
+  requireAdmin,
+  allowedCanteenIds,
+  canAccessCanteen,
+  forbidden,
+  resolveCanteenScope,
+  type CallerProfile,
+} from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   const supabase = createClient();
@@ -65,6 +72,13 @@ export async function GET(request: NextRequest) {
   // explicit ?status=payment_pending must return nothing (rows stay in the DB).
   query = query.not('status', 'in', '("payment_pending","payment_failed")');
 
+  // Soft-hidden orders (a canteen admin cleared them from their history) are
+  // invisible to canteen admins / staff, but super admins still see every row
+  // (the UI badges the hidden ones). Rows are never removed from the DB.
+  if (profile.role !== 'super_admin') {
+    query = query.is('hidden_at', null);
+  }
+
   const { data, error, count } = await query;
 
   if (error) {
@@ -79,4 +93,88 @@ export async function GET(request: NextRequest) {
     data: data ?? [],
     pagination: { page, limit, total: count ?? 0, total_pages: Math.ceil((count ?? 0) / limit) },
   });
+}
+
+// Soft-hide order history. NON-destructive: rows (and all financial data) stay
+// in the DB — this only stamps hidden_at/hidden_by so the orders drop out of the
+// canteen admin's history view. Super admins still see every row (badged). The
+// admin UI gates this behind a CSV export so there's always an offline copy
+// first. canteen_admin ONLY (super admins are view-only for history; staff
+// cannot), and every targeted order must fall inside the caller's canteen scope.
+const MAX_DELETE_BATCH = 1000;
+
+export async function DELETE(request: NextRequest) {
+  const { profile, response } = await requireAdmin(['canteen_admin']);
+  if (response) return response;
+
+  let body: { ids?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+
+  const ids = Array.isArray(body.ids)
+    ? [...new Set(body.ids.filter((v): v is string => typeof v === 'string' && v.length > 0))]
+    : [];
+
+  if (ids.length === 0) {
+    return NextResponse.json(
+      { success: false, error: { code: 'INVALID_INPUT', message: 'No order ids supplied' } },
+      { status: 400 }
+    );
+  }
+  if (ids.length > MAX_DELETE_BATCH) {
+    return NextResponse.json(
+      { success: false, error: { code: 'INVALID_INPUT', message: `Cannot delete more than ${MAX_DELETE_BATCH} orders at once` } },
+      { status: 400 }
+    );
+  }
+
+  const service = createServiceClient();
+
+  // Load every targeted order first and enforce tenant scoping before any write.
+  const { data: rows, error: fetchError } = await service
+    .from('orders')
+    .select('id, canteen_id')
+    .in('id', ids);
+
+  if (fetchError) {
+    return NextResponse.json(
+      { success: false, error: { code: 'DB_ERROR', message: fetchError.message } },
+      { status: 500 }
+    );
+  }
+
+  const found = rows ?? [];
+  if (found.length === 0) {
+    return NextResponse.json(
+      { success: false, error: { code: 'NOT_FOUND', message: 'No matching orders found' } },
+      { status: 404 }
+    );
+  }
+
+  const allowed = await allowedCanteenIds(profile);
+  const outOfScope = found.some((o: { canteen_id: string }) => !canAccessCanteen(o.canteen_id, allowed));
+  if (outOfScope) {
+    return forbidden('Cannot hide orders outside your canteen scope');
+  }
+
+  // Soft-hide: stamp hidden_at/hidden_by. Paid orders are fine to hide because
+  // nothing is destroyed — the rows (and financials) remain, and super admins
+  // still see them. Only the rows we verified are touched.
+  const hiddenIds = found.map((o: { id: string }) => o.id);
+  const { error: hideError } = await service
+    .from('orders')
+    .update({ hidden_at: new Date().toISOString(), hidden_by: profile.id })
+    .in('id', hiddenIds);
+
+  if (hideError) {
+    return NextResponse.json(
+      { success: false, error: { code: 'DB_ERROR', message: hideError.message } },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ success: true, hidden: hiddenIds.length });
 }
