@@ -5,16 +5,31 @@ import { Plus, Minus, Trash2, ShoppingCart, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { useCartStore, useCartSubtotal, useCartTax, useCartTotal, useCartTotalItems } from '@/store/cart-store';
+import { useQuery } from '@tanstack/react-query';
 import { useUIStore } from '@/store/ui-store';
 import { formatPrice } from '@/lib/formatting';
 
 export function CartSheet() {
   const router = useRouter();
   const { isCartOpen, closeCart } = useUIStore();
-  const { items, updateQuantity, removeItem, clearCart } = useCartStore();
+  const { items, canteenId, updateQuantity, removeItem, clearCart } = useCartStore();
   const subtotalPaise = useCartSubtotal();
-  const taxPaise = useCartTax();
-  const totalPaise = useCartTotal();
+  const { data: canteen } = useQuery({
+    queryKey: ['canteen', canteenId],
+    queryFn: () =>
+      fetch(`/api/v1/canteens/${canteenId}`)
+        .then((r) => r.json())
+        .then(
+          (j) =>
+            j.data as { gst_enabled?: boolean; tax_percentage?: number | string } | null
+        ),
+    enabled: !!canteenId,
+  });
+  const gstEnabled = canteen?.gst_enabled !== false;
+  const taxPercent = Number(canteen?.tax_percentage ?? 5);
+  const taxRate = gstEnabled ? taxPercent / 100 : 0;
+  const taxPaise = useCartTax(taxRate);
+  const totalPaise = useCartTotal(taxRate);
   const totalItems = useCartTotalItems();
 
   function handleCheckout() {
@@ -107,10 +122,12 @@ export function CartSheet() {
               <span className="text-text-2">Subtotal</span>
               <span className="text-text tabular-nums">{formatPrice(subtotalPaise)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-text-2">GST (5%)</span>
-              <span className="text-text tabular-nums">{formatPrice(taxPaise)}</span>
-            </div>
+            {gstEnabled && (
+              <div className="flex justify-between text-sm">
+                <span className="text-text-2">GST ({taxPercent}%)</span>
+                <span className="text-text tabular-nums">{formatPrice(taxPaise)}</span>
+              </div>
+            )}
             <div className="flex items-baseline justify-between border-t border-border pt-2">
               <span className="text-sm font-semibold text-text">Total</span>
               <span className="font-display font-semibold tracking-tight text-xl text-text tabular-nums">{formatPrice(totalPaise)}</span>
