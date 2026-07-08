@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { generateOrderNumber } from '@/lib/formatting';
-import { TAX_RATE } from '@/lib/constants';
 import { orderLimiter } from '@/lib/rate-limit';
 
 const orderItemSchema = z.object({
@@ -34,30 +33,58 @@ export async function GET(request: Request) {
     const perPage = parseInt(searchParams.get('per_page') ?? '20', 10);
     const offset = (page - 1) * perPage;
 
+    // Hide unpaid ONLINE orders (abandoned payments) from history — but always
+    // show cash orders: a pending cash order is "placed, awaiting counter
+    // payment", and the student must be able to see/track it. Both queries below
+    // apply the identical user/status/range/visibility filters.
+    const VISIBILITY = 'payment_method.eq.cash,status.not.in.(payment_pending,payment_failed)';
+
+    // --- Cheap change-detection (polled every 30s by the orders list) ---
+    // Select only the fields that move (status, payment_status, updated_at) and
+    // hash them into an ETag, so unchanged polls return 304 — skipping the heavy
+    // `*`+joins fetch (Supabase egress) and the response transfer (Vercel egress).
+    let sigQuery = supabase
+      .from('orders')
+      .select('id, status, payment_status, updated_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + perPage - 1);
+    if (status) sigQuery = sigQuery.eq('status', status);
+    const { data: sig, error: sigErr } = await sigQuery.or(VISIBILITY);
+
+    if (sigErr) {
+      console.error('[orders GET] signature error:', JSON.stringify(sigErr));
+      return NextResponse.json({ error: 'database_error' }, { status: 500 });
+    }
+
+    // djb2 hash of the row signature — keeps the ETag header short regardless of
+    // page size. Dependency-free; runs identically on node/edge.
+    const sigStr = (sig ?? [])
+      .map((o) => `${o.id}:${o.status}:${o.payment_status}:${o.updated_at}`)
+      .join('|');
+    let h = 5381;
+    for (let i = 0; i < sigStr.length; i++) h = ((h * 33) ^ sigStr.charCodeAt(i)) >>> 0;
+    const etag = `"l${(sig ?? []).length}.${h.toString(36)}"`;
+    const cacheHeaders = { ETag: etag, 'Cache-Control': 'private, no-cache' };
+    if (request.headers.get('if-none-match') === etag) {
+      return new Response(null, { status: 304, headers: cacheHeaders });
+    }
+
     let query = supabase
       .from('orders')
       .select('*, canteen:canteens(id, name), items:order_items(id, menu_item_id, name:menu_item_name, price_paise:unit_price_paise, quantity, subtotal_paise:total_price_paise, special_note:customization_notes)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + perPage - 1);
-
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    // Hide unpaid ONLINE orders (abandoned payments) from history — but always
-    // show cash orders: a pending cash order is "placed, awaiting counter
-    // payment", and the student must be able to see/track it.
-    query = query.or('payment_method.eq.cash,status.not.in.(payment_pending,payment_failed)');
-
-    const { data, error } = await query;
+    if (status) query = query.eq('status', status);
+    const { data, error } = await query.or(VISIBILITY);
 
     if (error) {
       console.error('[orders GET] DB error:', JSON.stringify(error));
       return NextResponse.json({ error: 'database_error' }, { status: 500 });
     }
 
-    return NextResponse.json({ data: data ?? [] });
+    return NextResponse.json({ data: data ?? [] }, { headers: cacheHeaders });
   } catch (err) {
     console.error('Orders GET error:', err);
     return NextResponse.json({ error: 'internal_error', message: 'Internal server error' }, { status: 500 });
@@ -101,12 +128,27 @@ export async function POST(request: Request) {
     // Verify canteen exists and is open
     const { data: canteen, error: canteenErr } = await supabase
       .from('canteens')
-      .select('id, is_open, is_active, institute_id, institutes(is_active_subscriber)')
+      .select('id, is_open, is_active, billing_state, institute_id, cash_payments_enabled, gst_enabled, tax_percentage, institutes(is_active_subscriber)')
       .eq('id', canteen_id)
       .single();
 
     if (canteenErr || !canteen) {
       return NextResponse.json({ error: 'not_found', message: 'Canteen not found' }, { status: 404 });
+    }
+
+    // Institute scoping: a student may only order from canteens in their own
+    // institute. Mirror canteens/[canteenId] — reject with 403 on mismatch.
+    const { data: profile } = await supabase
+      .from('users')
+      .select('institute_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.institute_id && profile.institute_id !== canteen.institute_id) {
+      return NextResponse.json(
+        { error: 'forbidden', message: 'This canteen does not belong to your institute' },
+        { status: 403 }
+      );
     }
 
     // Subscription gating: block new orders if the institute's subscription lapsed.
@@ -115,7 +157,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'institute_inactive', message: 'Ordering is currently unavailable for this canteen.' }, { status: 403 });
     }
 
-    if (!canteen.is_active) {
+    if (!canteen.is_active || canteen.billing_state !== 'active') {
       return NextResponse.json({ error: 'canteen_inactive', message: 'This canteen is not accepting orders' }, { status: 400 });
     }
 
@@ -123,11 +165,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'canteen_closed', message: 'This canteen is currently closed' }, { status: 400 });
     }
 
+    // Cash gating: this canteen may have "Pay by cash" turned off by its admin.
+    // The cart hides the option client-side, but that is bypassable, so it is
+    // re-checked here authoritatively. Treat a null/undefined flag as enabled so
+    // existing canteens keep accepting cash until an admin turns it off.
+    if (payment_method === 'cash' && canteen.cash_payments_enabled === false) {
+      return NextResponse.json(
+        { error: 'cash_disabled', message: 'This canteen is not accepting cash payments. Please pay online.' },
+        { status: 400 }
+      );
+    }
+
     // Fetch menu items (include stock fields)
     const menuItemIds = items.map((i) => i.menu_item_id);
     const { data: menuItems, error: menuErr } = await supabase
       .from('menu_items')
-      .select('id, name, price_paise, is_available, canteen_id, stock_enabled, stock_count')
+      .select('id, name, price_paise, is_available, canteen_id, stock_enabled, stock_count, category_id, category:categories(separate_billing)')
       .in('id', menuItemIds)
       .eq('canteen_id', canteen_id);
 
@@ -158,6 +211,28 @@ export async function POST(request: Request) {
       }
     }
 
+    // Enforce separate-billing (order-alone) categories. A category flagged
+    // separate_billing may only be ordered on its own — its items cannot share
+    // an order with items from any other category. The student cart blocks this
+    // client-side, but that is bypassable, so it is re-checked here authoritatively.
+    const orderedCategoryIds = new Set<string | null>();
+    let hasSeparateBilling = false;
+    for (const item of items) {
+      const menuItem = menuItemMap.get(item.menu_item_id)!;
+      orderedCategoryIds.add(menuItem.category_id ?? null);
+      const cat = menuItem.category as { separate_billing?: boolean } | null;
+      if (cat?.separate_billing) hasSeparateBilling = true;
+    }
+    if (hasSeparateBilling && orderedCategoryIds.size > 1) {
+      return NextResponse.json(
+        {
+          error: 'mixed_billing_categories',
+          message: 'Some items must be ordered separately. Please place them in their own order.',
+        },
+        { status: 400 }
+      );
+    }
+
     // Calculate totals
     let subtotalPaise = 0;
     const orderItemsData = items.map((item) => {
@@ -174,7 +249,12 @@ export async function POST(request: Request) {
       };
     });
 
-    const taxPaise = Math.round(subtotalPaise * TAX_RATE);
+    // GST is a per-canteen, super_admin-controlled setting. gst_enabled === false
+    // means no GST at this canteen; otherwise the rate is tax_percentage (default 5).
+    // A null/absent flag is treated as enabled so existing canteens keep charging GST.
+    const effectiveTaxRate =
+      canteen.gst_enabled === false ? 0 : Number(canteen.tax_percentage ?? 5) / 100;
+    const taxPaise = Math.round(subtotalPaise * effectiveTaxRate);
     let discountPaise = 0;
     let claimedCouponId: string | null = null;
 
