@@ -44,8 +44,10 @@ CREATE TABLE IF NOT EXISTS canteens (
   closing_time        TIME,                         -- e.g. 20:00
   is_open             BOOLEAN NOT NULL DEFAULT true, -- manual override (e.g. holiday)
   is_active           BOOLEAN NOT NULL DEFAULT true,
+  cash_payments_enabled BOOLEAN NOT NULL DEFAULT true, -- students may pay by cash at this canteen
   prep_time_minutes   INTEGER NOT NULL DEFAULT 15 CHECK (prep_time_minutes >= 0),
   tax_percentage      NUMERIC(5,2) NOT NULL DEFAULT 5.00 CHECK (tax_percentage >= 0),
+  gst_enabled         BOOLEAN NOT NULL DEFAULT true,  -- super_admin-only: when false, no GST is charged on student orders
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
