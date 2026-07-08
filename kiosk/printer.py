@@ -3,9 +3,12 @@ ThermalPrinter — wraps python-escpos for ESC/POS USB printers (e.g. Retsol RTP
 80mm). Line width comes from config `chars_per_line` (default below).
 
 Compact receipt layout:
-  Header (Font A): MUNCHADDA, canteen name
+  Header (Font A): institute short name, canteen name
   Token number (Font A, double size) — the pickup number
   Body (Font B, small): order no, time, items, subtotal/GST/total, footer
+
+Heading + watermark text come from the institute's short name (config
+`printer.institute_short_name`) — the MunchAdda platform name is not printed.
 """
 
 import logging
@@ -125,6 +128,23 @@ class ThermalPrinter:
             return "error"
 
     # ------------------------------------------------------------------
+    # Receipt branding
+    # ------------------------------------------------------------------
+
+    def _receipt_heading(self) -> str:
+        """Big receipt heading + watermark text: the institute's SHORT name.
+
+        Falls back to the full institute_name, then a neutral default. The
+        MunchAdda platform name is intentionally never printed here.
+        """
+        short = (
+            self.config.get("institute_short_name")
+            or self.config.get("institute_name")
+            or ""
+        )
+        return str(short).strip() or "RECEIPT"
+
+    # ------------------------------------------------------------------
     # Receipt printing
     # ------------------------------------------------------------------
 
@@ -155,8 +175,8 @@ class ThermalPrinter:
 
         try:
             # Preferred: render the whole receipt as an image so we can draw the
-            # MUNCHADDA security watermark behind the text. Falls back to plain
-            # text mode if the printer can't do raster image printing.
+            # institute-short-name security watermark behind the text. Falls back
+            # to plain text mode if the printer can't do raster image printing.
             try:
                 self._do_print_image(order_data)
                 return True
@@ -174,10 +194,12 @@ class ThermalPrinter:
             return False
 
     def _do_print_image(self, d: dict) -> None:
-        """Render the receipt as a bitmap with a faint diagonal MUNCHADDA
-        watermark, then print it as a raster image. Makes the bill look official
-        and hard to forge on plain paper."""
+        """Render the receipt as a bitmap with a faint diagonal watermark of the
+        institute's short name, then print it as a raster image. Makes the bill
+        look official and hard to forge on plain paper."""
         from PIL import Image, ImageDraw, ImageFont, ImageChops
+
+        heading = self._receipt_heading()
 
         width = RECEIPT_IMG_WIDTH
         pad = 12   # horizontal (left/right) margin
@@ -200,9 +222,11 @@ class ThermalPrinter:
 
         # ── Build element list ─────────────────────────────────────────────
         # ('center'|'left', text, font) | ('lr', left, right, font) | ('div',) | ('gap', px)
-        els: list = [("center", "MUNCHADDA", f_title)]
+        els: list = [("center", heading, f_title)]
+        # Show the full institute name as a subheading only when it adds
+        # information beyond the (possibly abbreviated) heading.
         inst = self.config.get("institute_name", "")
-        if inst:
+        if inst and str(inst).strip() != heading:
             els.append(("center", str(inst), f_head))
         canteen = d.get("canteen_name") or self.config.get("canteen_name", "Campus Canteen")
         els.append(("center", str(canteen), f_head))
@@ -270,10 +294,11 @@ class ThermalPrinter:
         img = Image.new("L", (width, height), 255)
         wm = Image.new("L", (width, height), 255)
         wd = ImageDraw.Draw(wm)
+        wm_text = heading.upper()
         for i, yy in enumerate(range(-30, height, 110)):
             xoff = (i % 2) * 130
             for xx in range(-40 + xoff, width, 300):
-                wd.text((xx, yy), "MUNCHADDA", font=f_wm, fill=185)
+                wd.text((xx, yy), wm_text, font=f_wm, fill=185)
         wm = wm.rotate(18, expand=0, fillcolor=255)
         img = ImageChops.darker(img, wm)
 
@@ -338,9 +363,10 @@ class ThermalPrinter:
         dash = _divider("-", w)
 
         # ------ Header (all Font B, centred on the column grid) ------
-        centered("MUNCHADDA", bold=True)
+        heading = self._receipt_heading()
+        centered(heading, bold=True)
         institute = self.config.get("institute_name", "")
-        if institute:
+        if institute and str(institute).strip() != heading:
             for ln in textwrap.wrap(institute, w):
                 centered(ln)
         canteen = d.get("canteen_name") or self.config.get("canteen_name", "Campus Canteen")

@@ -21,7 +21,12 @@ printer:
   product_id: "0x2016"         # ...and PID
   paper_width_mm: 80           # Retsol RTP82 is 80mm
   chars_per_line: 64           # Font B columns: 64 for 80mm, 42 for 58mm
-  institute_name: "Your Institute Name"   # printed under MUNCHADDA on the receipt
+  # institute_short_name is the BIG heading + faint watermark on every receipt.
+  # Keep it short (e.g. "ABC College") so the watermark tiles cleanly.
+  institute_short_name: "ABC College"
+  # institute_name is the full name, printed as a smaller subheading (omit or
+  # leave equal to the short name to print just one line).
+  institute_name: "Your Institute Name"
   cut_after_print: true
 
 display:
