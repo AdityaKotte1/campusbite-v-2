@@ -400,15 +400,40 @@ class KioskApp:
         self.display.show_idle()
 
     def _print_receipt_safe(self, order_data: dict, offline: bool) -> None:
-        try:
-            if offline:
-                order_data = dict(order_data)
-                order_data["_offline_scan"] = True
-            ok = self.printer.print_receipt(order_data)
-            if not ok:
-                log.warning("Receipt print failed for order %s", order_data.get("order_number"))
-        except Exception as exc:  # pylint: disable=broad-except
-            log.exception("Exception during receipt printing: %s", exc)
+        if offline:
+            order_data = dict(order_data)
+            order_data["_offline_scan"] = True
+
+        order_no = order_data.get("order_number")
+        token = order_data.get("token_number") or order_data.get("display_number")
+
+        # Retry once with a fresh printer connection between attempts, so a single
+        # transient USB glitch / brief offline printer doesn't drop the receipt.
+        attempts = 2
+        for i in range(attempts):
+            try:
+                if self.printer.print_receipt(order_data):
+                    if i > 0:
+                        log.info("Receipt printed on retry %d for order %s", i + 1, order_no)
+                    return
+                log.warning("Receipt print failed (attempt %d/%d) for order %s", i + 1, attempts, order_no)
+            except Exception as exc:  # pylint: disable=broad-except
+                log.exception("Exception during receipt printing (attempt %d/%d): %s", i + 1, attempts, exc)
+
+            if i < attempts - 1:
+                time.sleep(1.0)
+                try:
+                    self.printer._init_printer()  # force reconnect before retrying
+                except Exception:  # pylint: disable=broad-except
+                    pass
+
+        # Loud, unmistakable line so a missing receipt is easy to find in the log
+        # and to reconcile against the scan (which already succeeded server-side).
+        log.error(
+            "RECEIPT NOT PRINTED after %d attempts — order=%s token=%s. "
+            "Scan was recorded; reprint from the admin or re-scan is needed.",
+            attempts, order_no, token,
+        )
 
     # ------------------------------------------------------------------
     # Background loops

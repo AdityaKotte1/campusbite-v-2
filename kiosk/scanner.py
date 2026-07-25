@@ -9,6 +9,7 @@ Fallback: stdin readline (dev/testing on any OS).
 import logging
 import string
 import threading
+import time
 from typing import Callable, Optional
 
 log = logging.getLogger("scanner")
@@ -75,16 +76,35 @@ class BarcodeScanner:
     # ------------------------------------------------------------------
 
     def start(self) -> None:
-        """Blocking — call in a daemon thread.  Tries evdev then stdin."""
+        """Blocking — call in a daemon thread.  Tries evdev then stdin.
+
+        The evdev path runs inside a reconnect loop: if the scanner drops off
+        USB (Errno 19 — common on the Pi when the printer browns out the bus),
+        the read loop ends and we re-find + re-grab the device instead of dying,
+        so scanning self-heals without a reboot.
+        """
         self._running = True
+
         try:
             import evdev  # type: ignore  # Linux only
-            self._start_evdev(evdev)
-        except (ImportError, Exception) as exc:
-            log.info(
-                "evdev not available (%s) — falling back to stdin scanner.", exc
-            )
+        except Exception as exc:  # pylint: disable=broad-except
+            log.info("evdev not available (%s) — falling back to stdin scanner.", exc)
             self._start_stdin()
+            return
+
+        backoff = 1
+        while self._running:
+            try:
+                self._start_evdev(evdev)  # returns on disconnect or stop()
+                backoff = 1  # a session ran; reset the backoff
+            except Exception as exc:  # pylint: disable=broad-except
+                # Usually "no scanner found" right after a disconnect.
+                log.warning("Scanner unavailable (%s)", exc)
+            if not self._running:
+                break
+            log.info("Re-acquiring scanner in %ds …", backoff)
+            time.sleep(backoff)
+            backoff = min(backoff * 2, 10)
 
     def stop(self) -> None:
         self._running = False
@@ -94,6 +114,7 @@ class BarcodeScanner:
     # ------------------------------------------------------------------
 
     def _start_evdev(self, evdev) -> None:
+        self._buffer = ""  # drop any partial read left over from a disconnect
         device = self._find_device(evdev)
         if device is None:
             raise RuntimeError("No compatible barcode scanner found via evdev.")
